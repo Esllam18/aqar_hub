@@ -1,0 +1,253 @@
+import 'package:flutter/material.dart';
+
+abstract final class PropertyFeaturesConstants {
+  // ── Property Types ────────────────────────────────────────────────────────
+  static const List<Map<String, dynamic>> propertyTypes = [
+    {
+      'key': 'apartment',
+      'labelAr': 'شقة',
+      'labelEn': 'Apartment',
+      'icon': Icons.apartment_rounded,
+    },
+    {
+      'key': 'villa',
+      'labelAr': 'فيلا',
+      'labelEn': 'Villa',
+      'icon': Icons.villa_rounded,
+    },
+    {
+      'key': 'studio',
+      'labelAr': 'استوديو',
+      'labelEn': 'Studio',
+      'icon': Icons.single_bed_rounded,
+    },
+    {
+      'key': 'penthouse',
+      'labelAr': 'بنتهاوس',
+      'labelEn': 'Penthouse',
+      'icon': Icons.roofing_rounded,
+    },
+    {
+      'key': 'duplex',
+      'labelAr': 'دوبلكس',
+      'labelEn': 'Duplex',
+      'icon': Icons.domain_rounded,
+    },
+    {
+      'key': 'chalet',
+      'labelAr': 'شاليه',
+      'labelEn': 'Chalet',
+      'icon': Icons.cabin_rounded,
+    },
+  ];
+
+  // ── Amenities / Features ──────────────────────────────────────────────────
+  static const List<Map<String, dynamic>> amenities = [
+    {
+      'key': 'wifi',
+      'labelAr': 'واي فاي',
+      'labelEn': 'WiFi',
+      'icon': Icons.wifi_rounded,
+    },
+    {
+      'key': 'ac',
+      'labelAr': 'تكييف',
+      'labelEn': 'Air Conditioner',
+      'icon': Icons.ac_unit_rounded,
+    },
+    {
+      'key': 'parking',
+      'labelAr': 'موقف سيارات',
+      'labelEn': 'Parking',
+      'icon': Icons.local_parking_rounded,
+    },
+    {
+      'key': 'security',
+      'labelAr': 'حراسة 24 ساعة',
+      'labelEn': '24h Security',
+      'icon': Icons.security_rounded,
+    },
+    {
+      'key': 'elevator',
+      'labelAr': 'مصعد',
+      'labelEn': 'Elevator',
+      'icon': Icons.elevator_rounded,
+    },
+    {
+      'key': 'pool',
+      'labelAr': 'مسبح',
+      'labelEn': 'Pool',
+      'icon': Icons.pool_rounded,
+    },
+    {
+      'key': 'gym',
+      'labelAr': 'جيم',
+      'labelEn': 'Gym',
+      'icon': Icons.fitness_center_rounded,
+    },
+    {
+      'key': 'washer',
+      'labelAr': 'غسالة',
+      'labelEn': 'Washer',
+      'icon': Icons.local_laundry_service_rounded,
+    },
+    {
+      'key': 'furnished',
+      'labelAr': 'مفروش',
+      'labelEn': 'Furnished',
+      'icon': Icons.chair_rounded,
+    },
+    {
+      'key': 'balcony',
+      'labelAr': 'شرفة',
+      'labelEn': 'Balcony',
+      'icon': Icons.deck_rounded,
+    },
+    {
+      'key': 'garden',
+      'labelAr': 'حديقة',
+      'labelEn': 'Garden',
+      'icon': Icons.yard_rounded,
+    },
+    {
+      'key': 'generator',
+      'labelAr': 'جنراتور',
+      'labelEn': 'Generator',
+      'icon': Icons.bolt_rounded,
+    },
+    {
+      'key': 'intercom',
+      'labelAr': 'إنتركم',
+      'labelEn': 'Intercom',
+      'icon': Icons.doorbell_rounded,
+    },
+    {
+      'key': 'storage',
+      'labelAr': 'غرفة تخزين',
+      'labelEn': 'Storage Room',
+      'icon': Icons.inventory_2_rounded,
+    },
+    {
+      'key': 'solar',
+      'labelAr': 'طاقة شمسية',
+      'labelEn': 'Solar Energy',
+      'icon': Icons.solar_power_rounded,
+    },
+    {
+      'key': 'gas',
+      'labelAr': 'غاز طبيعي',
+      'labelEn': 'Natural Gas',
+      'icon': Icons.local_fire_department_rounded,
+    },
+    {
+      'key': 'pets',
+      'labelAr': 'يسمح بالحيوانات',
+      'labelEn': 'Pets Allowed',
+      'icon': Icons.pets_rounded,
+    },
+    {
+      'key': 'rooftop',
+      'labelAr': 'سطح خاص',
+      'labelEn': 'Private Roof',
+      'icon': Icons.roofing_rounded,
+    },
+    {
+      'key': 'playground',
+      'labelAr': 'ملعب أطفال',
+      'labelEn': 'Playground',
+      'icon': Icons.child_friendly_rounded,
+    },
+    {
+      'key': 'cctv',
+      'labelAr': 'كاميرات مراقبة',
+      'labelEn': 'CCTV',
+      'icon': Icons.videocam_rounded,
+    },
+  ];
+
+  // ── Egyptian Governorates ─────────────────────────────────────────────────
+  static const List<String> governorates = [
+    'القاهرة',
+    'الجيزة',
+    'الإسكندرية',
+    'بني سويف',
+    'المنيا',
+    'أسيوط',
+    'سوهاج',
+    'الفيوم',
+    'قنا',
+    'الأقصر',
+    'أسوان',
+    'الدقهلية',
+    'الشرقية',
+    'الغربية',
+    'المنوفية',
+    'البحيرة',
+    'كفر الشيخ',
+    'الإسماعيلية',
+    'بورسعيد',
+    'السويس',
+    'دمياط',
+    'الوادي الجديد',
+    'مطروح',
+    'شمال سيناء',
+    'جنوب سيناء',
+    'البحر الأحمر',
+  ];
+
+  static const Map<String, List<String>> areasByGovernorate = {
+    'القاهرة': [
+      'مدينة نصر',
+      'التجمع الخامس',
+      'التجمع الأول',
+      'المعادي',
+      'الزمالك',
+      'هليوبوليس',
+      'عين شمس',
+      'المنيل',
+      'المقطم',
+      'شبرا',
+      'مصر الجديدة',
+    ],
+    'الجيزة': [
+      'الشيخ زايد',
+      '6 أكتوبر',
+      'الدقي',
+      'المهندسين',
+      'الهرم',
+      'فيصل',
+      'إمبابة',
+      'الوراق',
+    ],
+    'الإسكندرية': [
+      'سيدي بشر',
+      'المنتزه',
+      'الإبراهيمية',
+      'محرم بك',
+      'كليوباترا',
+      'سموحة',
+      'لوران',
+      'العجمي',
+    ],
+    'بني سويف': [
+      'الوسطى',
+      'الشمالية',
+      'ناصر',
+      'إهناسيا',
+      'ببا',
+      'الفشن',
+      'نزلة',
+    ],
+    'المنيا': [
+      'المنيا المدينة',
+      'مغاغة',
+      'ملوي',
+      'سمالوط',
+      'بني مزار',
+      'أبو قرقاص',
+    ],
+    'أسيوط': ['أسيوط المدينة', 'ديروط', 'القوصية', 'أبنوب', 'منفلوط'],
+    'سوهاج': ['سوهاج المدينة', 'طهطا', 'جرجا', 'أخميم', 'المراغة'],
+    'الفيوم': ['الفيوم المدينة', 'سنورس', 'يوسف الصديق', 'إطسا'],
+  };
+}

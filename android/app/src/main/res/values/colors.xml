@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      This color is shown INSTANTLY when the Android process starts,
+      before Flutter draws anything. It must match your splash screen
+      background so there is NO white flash between OS launch and Flutter.
+      AqarHub splash uses gradient [#1B2D5E → #243772]. Use the darker end.
+    -->
+    <color name="splash_background">#1B2D5E</color>
+</resources>

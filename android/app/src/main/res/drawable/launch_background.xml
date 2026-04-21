@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Shown from the moment the Android process starts until Flutter renders its
+  first frame. Background must match the Flutter splash color (#1B2D5E).
+  The ic_launcher is centered so users see the icon immediately.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Solid dark-blue background — matches SplashContent gradient start -->
+    <item android:drawable="@color/splash_background" />
+
+ 
+</layer-list>
