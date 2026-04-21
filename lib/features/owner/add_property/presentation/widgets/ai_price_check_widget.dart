@@ -10,7 +10,7 @@ import 'dart:convert';
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
-import 'package:aqar_hub/features/owner/home/data/models/add_property_form_model.dart';
+import 'package:aqar_hub/features/owner/add_property/data/models/add_property_form_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -79,8 +79,7 @@ class _AiPriceCheckWidgetState extends State<AiPriceCheckWidget> {
       'new_valley': 'الوادي الجديد',
     };
 
-    final govDisplay =
-        govNames[form.governorateSlug] ?? form.governorateSlug;
+    final govDisplay = govNames[form.governorateSlug] ?? form.governorateSlug;
     final listingAr = form.isRent ? 'إيجار' : 'بيع';
     final furnishedAr = form.isFurnished ? 'مفروشة' : 'غير مفروشة';
 
@@ -94,7 +93,8 @@ class _AiPriceCheckWidgetState extends State<AiPriceCheckWidget> {
     };
     final typeDisplay = typeNames[form.propertyType] ?? form.propertyType;
 
-    final prompt = '''
+    final prompt =
+        '''
 أنت خبير تقييم عقارات في مصر. بناءً على المعطيات التالية، قيّم السعر المطلوب وقدّم توصية.
 
 تفاصيل العقار:
@@ -172,12 +172,12 @@ class _AiPriceCheckWidgetState extends State<AiPriceCheckWidget> {
     final label = (data['label'] as String?)?.toLowerCase() ?? 'normal';
     final confidenceStr =
         (data['confidence'] as String?)?.toLowerCase() ?? 'medium';
-    final explanationAr =
-        (data['explanation_ar'] as String?) ?? '';
+    final explanationAr = (data['explanation_ar'] as String?) ?? '';
 
     // Validate label is one of the DB-allowed values
-    final safeLabel =
-        ['offer', 'verified', 'normal'].contains(label) ? label : 'normal';
+    final safeLabel = ['offer', 'verified', 'normal'].contains(label)
+        ? label
+        : 'normal';
 
     final confidence = switch (confidenceStr) {
       'high' => AiConfidence.high,
@@ -283,8 +283,7 @@ class _AiPriceCheckWidgetState extends State<AiPriceCheckWidget> {
               key: const ValueKey('idle'),
               onCheck: _check,
             ),
-            _CheckState.loading =>
-              const _LoadingCard(key: ValueKey('loading')),
+            _CheckState.loading => const _LoadingCard(key: ValueKey('loading')),
             _CheckState.done => _ResultCard(
               key: const ValueKey('done'),
               result: _result!,
@@ -443,26 +442,25 @@ class _LoadingCard extends StatelessWidget {
 class _ResultCard extends StatelessWidget {
   final AiPriceResult result;
   final VoidCallback onReCheck;
-  const _ResultCard(
-      {super.key, required this.result, required this.onReCheck});
+  const _ResultCard({super.key, required this.result, required this.onReCheck});
 
   Color get _accentColor => switch (result.priceLabel) {
-        'offer' => const Color(0xFFF59E0B),
-        'verified' => const Color(0xFF059669),
-        _ => AppColors.primary,
-      };
+    'offer' => const Color(0xFFF59E0B),
+    'verified' => const Color(0xFF059669),
+    _ => AppColors.primary,
+  };
 
   IconData get _accentIcon => switch (result.priceLabel) {
-        'offer' => Icons.local_offer_rounded,
-        'verified' => Icons.verified_rounded,
-        _ => Icons.check_circle_outline_rounded,
-      };
+    'offer' => Icons.local_offer_rounded,
+    'verified' => Icons.verified_rounded,
+    _ => Icons.check_circle_outline_rounded,
+  };
 
   Color get _confidenceColor => switch (result.confidence) {
-        AiConfidence.high => const Color(0xFF059669),
-        AiConfidence.medium => const Color(0xFFF59E0B),
-        AiConfidence.low => Colors.grey.shade500,
-      };
+    AiConfidence.high => const Color(0xFF059669),
+    AiConfidence.medium => const Color(0xFFF59E0B),
+    AiConfidence.low => Colors.grey.shade500,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -513,8 +511,7 @@ class _ResultCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    context.rSymmetric(horizontal: 8, vertical: 4),
+                padding: context.rSymmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _confidenceColor.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(context.r(8)),

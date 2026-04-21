@@ -1,6 +1,6 @@
-import 'package:aqar_hub/features/owner/home/data/models/add_property_form_model.dart';
-import 'package:aqar_hub/features/owner/home/data/repositories/add_property_repository_impl.dart';
-import 'package:aqar_hub/features/owner/home/presentation/cubit/add_property_state.dart';
+import 'package:aqar_hub/features/owner/add_property/data/models/add_property_form_model.dart';
+import 'package:aqar_hub/features/owner/add_property/data/repositories/add_property_repository_impl.dart';
+import 'package:aqar_hub/features/owner/add_property/presentation/cubit/add_property_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

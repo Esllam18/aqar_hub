@@ -7,9 +7,9 @@ import 'package:aqar_hub/features/house_seeker/search/data/repositories/search_r
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'search/search_header.dart';
-import 'search/search_results_view.dart';
-import 'search/search_states_ui.dart';
+import '../widgets/search/search_header.dart';
+import '../widgets/search/search_results_view.dart';
+import '../widgets/search/search_states_ui.dart';
 import '../cubit/search_cubit.dart';
 import '../cubit/search_state.dart';
 

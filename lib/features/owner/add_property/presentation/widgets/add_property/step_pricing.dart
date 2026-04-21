@@ -5,7 +5,7 @@
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
-import 'package:aqar_hub/features/owner/home/data/models/add_property_form_model.dart';
+import 'package:aqar_hub/features/owner/add_property/data/models/add_property_form_model.dart';
 import 'add_property_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

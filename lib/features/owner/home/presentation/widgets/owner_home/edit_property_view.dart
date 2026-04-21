@@ -11,9 +11,9 @@ import 'package:aqar_hub/features/owner/home/data/datasources/owner_properties_r
 import 'package:aqar_hub/features/owner/home/data/models/owner_property_model.dart';
 import 'package:aqar_hub/features/owner/home/data/models/rental_option_model.dart';
 import 'package:aqar_hub/features/owner/home/data/repositories/owner_properties_repository_impl.dart';
-import 'package:aqar_hub/features/owner/home/presentation/cubit/edit_property_cubit.dart';
-import 'package:aqar_hub/features/owner/home/presentation/cubit/edit_property_state.dart';
-import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/edit_property/edit_property_shared.dart';
+import 'package:aqar_hub/features/owner/edit_property/cubit/edit_property_cubit.dart';
+import 'package:aqar_hub/features/owner/edit_property/cubit/edit_property_state.dart';
+import 'package:aqar_hub/features/owner/edit_property/edit_property_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,7 +30,8 @@ class EditPropertyView extends StatelessWidget {
     return BlocProvider(
       create: (_) => EditPropertyCubit(
         repository: OwnerPropertiesRepositoryImpl(
-            OwnerPropertiesRemoteDatasource()),
+          OwnerPropertiesRemoteDatasource(),
+        ),
         original: property,
       ),
       child: _EditContent(property: property),
@@ -77,9 +78,9 @@ class _EditContentState extends State<_EditContent> {
     _addressCtrl = TextEditingController(text: p.address);
     _cityCtrl = TextEditingController(text: p.city);
     _priceCtrl = TextEditingController(
-        text: p.basePrice?.toInt().toString() ?? '');
-    _areaCtrl =
-        TextEditingController(text: p.areaM2?.toInt().toString() ?? '');
+      text: p.basePrice?.toInt().toString() ?? '',
+    );
+    _areaCtrl = TextEditingController(text: p.areaM2?.toInt().toString() ?? '');
     _rooms = p.totalRooms;
     _beds = p.totalBeds;
     _baths = p.bathrooms;
@@ -95,8 +96,15 @@ class _EditContentState extends State<_EditContent> {
   @override
   void dispose() {
     for (final c in [
-      _titleCtrl, _descCtrl, _addressCtrl, _cityCtrl, _priceCtrl, _areaCtrl
-    ]) { c.dispose(); }
+      _titleCtrl,
+      _descCtrl,
+      _addressCtrl,
+      _cityCtrl,
+      _priceCtrl,
+      _areaCtrl,
+    ]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -130,46 +138,60 @@ class _EditContentState extends State<_EditContent> {
   }
 
   String _typeLabel(String t) => switch (t) {
-        'villa' => 'property_type_villa'.tr(context),
-        'studio' => 'property_type_studio'.tr(context),
-        'penthouse' => 'property_type_penthouse'.tr(context),
-        'duplex' => 'property_type_duplex'.tr(context),
-        'chalet' => 'property_type_chalet'.tr(context),
-        _ => 'propertytypeapartment'.tr(context),
-      };
+    'villa' => 'property_type_villa'.tr(context),
+    'studio' => 'property_type_studio'.tr(context),
+    'penthouse' => 'property_type_penthouse'.tr(context),
+    'duplex' => 'property_type_duplex'.tr(context),
+    'chalet' => 'property_type_chalet'.tr(context),
+    _ => 'propertytypeapartment'.tr(context),
+  };
 
   String _audienceLabel(String v) => switch (v) {
-        'male' => 'audience_male'.tr(context),
-        'female' => 'audience_female'.tr(context),
-        'family' => 'audience_family'.tr(context),
-        _ => 'audience_all'.tr(context),
-      };
+    'male' => 'audience_male'.tr(context),
+    'female' => 'audience_female'.tr(context),
+    'family' => 'audience_family'.tr(context),
+    _ => 'audience_all'.tr(context),
+  };
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<EditPropertyCubit, EditPropertyState>(
       listener: (ctx, state) {
         if (state is EditPropertySuccess) {
-          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
-            content: Text('owner_property_updated'.tr(ctx),
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              content: Text(
+                'owner_property_updated'.tr(ctx),
                 style: GoogleFonts.tajawal(
-                    color: Colors.white, fontWeight: FontWeight.w700)),
-          ));
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          );
           Navigator.pop(ctx, state.updatedProperty);
         } else if (state is EditPropertyError) {
-          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
-            content: Text(state.message,
+          ScaffoldMessenger.of(ctx).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              content: Text(
+                state.message,
                 style: GoogleFonts.tajawal(
-                    color: Colors.white, fontWeight: FontWeight.w700)),
-          ));
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          );
         }
       },
       child: Scaffold(
@@ -182,12 +204,14 @@ class _EditContentState extends State<_EditContent> {
             icon: const Icon(Icons.close_rounded),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text('owner_edit_property'.tr(context),
-              style: GoogleFonts.cairo(
-                fontSize: context.sp(18),
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF1B2D5E),
-              )),
+          title: Text(
+            'owner_edit_property'.tr(context),
+            style: GoogleFonts.cairo(
+              fontSize: context.sp(18),
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1B2D5E),
+            ),
+          ),
           actions: [
             BlocBuilder<EditPropertyCubit, EditPropertyState>(
               builder: (ctx, state) {
@@ -200,7 +224,8 @@ class _EditContentState extends State<_EditContent> {
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       padding: context.rSymmetric(horizontal: 16, vertical: 8),
                     ),
                     child: loading
@@ -208,11 +233,16 @@ class _EditContentState extends State<_EditContent> {
                             width: context.r(16),
                             height: context.r(16),
                             child: const CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
-                        : Text('btnsave'.tr(context),
+                        : Text(
+                            'btnsave'.tr(context),
                             style: GoogleFonts.cairo(
-                                fontWeight: FontWeight.w800)),
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                   ),
                 );
               },
@@ -258,12 +288,14 @@ class _EditContentState extends State<_EditContent> {
                   ),
                   SizedBox(height: context.r(12)),
                   EditField(
-                      controller: _addressCtrl,
-                      label: 'addprop_address'.tr(context)),
+                    controller: _addressCtrl,
+                    label: 'addprop_address'.tr(context),
+                  ),
                   SizedBox(height: context.r(12)),
                   EditField(
-                      controller: _cityCtrl,
-                      label: 'addprop_city'.tr(context)),
+                    controller: _cityCtrl,
+                    label: 'addprop_city'.tr(context),
+                  ),
                 ],
               ),
               SizedBox(height: context.r(12)),
@@ -276,8 +308,12 @@ class _EditContentState extends State<_EditContent> {
                   EditChipSelector<String>(
                     label: 'addprop_property_type'.tr(context),
                     options: const [
-                      'apartment', 'villa', 'studio',
-                      'penthouse', 'duplex', 'chalet'
+                      'apartment',
+                      'villa',
+                      'studio',
+                      'penthouse',
+                      'duplex',
+                      'chalet',
                     ],
                     selected: _propType,
                     labelBuilder: _typeLabel,
@@ -439,8 +475,7 @@ class _EditContentState extends State<_EditContent> {
 class _RentalOptionsEditor extends StatelessWidget {
   final List<RentalOptionModel> options;
   final void Function(List<RentalOptionModel>) onChanged;
-  const _RentalOptionsEditor(
-      {required this.options, required this.onChanged});
+  const _RentalOptionsEditor({required this.options, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -456,8 +491,7 @@ class _RentalOptionsEditor extends StatelessWidget {
             child: _OptionTile(
               option: opt,
               onEdit: () async {
-                final updated =
-                    await showModalBottomSheet<RentalOptionModel>(
+                final updated = await showModalBottomSheet<RentalOptionModel>(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
@@ -499,8 +533,11 @@ class _RentalOptionsEditor extends StatelessWidget {
 class _OptionTile extends StatelessWidget {
   final RentalOptionModel option;
   final VoidCallback onEdit, onDelete;
-  const _OptionTile(
-      {required this.option, required this.onEdit, required this.onDelete});
+  const _OptionTile({
+    required this.option,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -516,29 +553,48 @@ class _OptionTile extends StatelessWidget {
         color: const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(context.r(12)),
       ),
-      child: Row(children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(typeLabel,
-                style: GoogleFonts.cairo(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  typeLabel,
+                  style: GoogleFonts.cairo(
                     fontWeight: FontWeight.w700,
                     fontSize: context.sp(13),
-                    color: const Color(0xFF1B2D5E))),
-            Text(
-                '${option.price.toInt()} ${'currency'.tr(context)} · ${option.totalQuantity} ${'addprop_units'.tr(context)}',
-                style: GoogleFonts.tajawal(
-                    fontSize: context.sp(12), color: Colors.grey.shade600)),
-          ]),
-        ),
-        IconButton(
+                    color: const Color(0xFF1B2D5E),
+                  ),
+                ),
+                Text(
+                  '${option.price.toInt()} ${'currency'.tr(context)} · ${option.totalQuantity} ${'addprop_units'.tr(context)}',
+                  style: GoogleFonts.tajawal(
+                    fontSize: context.sp(12),
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
             onPressed: onEdit,
-            icon: Icon(Icons.edit_outlined,
-                size: context.r(18), color: AppColors.primary)),
-        IconButton(
+            icon: Icon(
+              Icons.edit_outlined,
+              size: context.r(18),
+              color: AppColors.primary,
+            ),
+          ),
+          IconButton(
             onPressed: onDelete,
-            icon: Icon(Icons.delete_outline_rounded,
-                size: context.r(18), color: AppColors.error)),
-      ]),
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              size: context.r(18),
+              color: AppColors.error,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -559,11 +615,14 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
     super.initState();
     _type = widget.option?.type ?? 'monthly';
     _priceCtrl = TextEditingController(
-        text: widget.option?.price.toInt().toString() ?? '');
+      text: widget.option?.price.toInt().toString() ?? '',
+    );
     _qtyCtrl = TextEditingController(
-        text: widget.option?.totalQuantity.toString() ?? '1');
+      text: widget.option?.totalQuantity.toString() ?? '1',
+    );
     _availCtrl = TextEditingController(
-        text: widget.option?.availableQuantity.toString() ?? '1');
+      text: widget.option?.availableQuantity.toString() ?? '1',
+    );
   }
 
   @override
@@ -577,22 +636,26 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(context.r(24))),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(context.r(24)),
+          ),
         ),
         padding: context.rAll(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('addprop_rental_option'.tr(context),
-                style: GoogleFonts.cairo(
-                    fontSize: context.sp(16), fontWeight: FontWeight.w800)),
+            Text(
+              'addprop_rental_option'.tr(context),
+              style: GoogleFonts.cairo(
+                fontSize: context.sp(16),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             SizedBox(height: context.r(16)),
             EditChipSelector<String>(
               label: 'addprop_rental_type'.tr(context),
@@ -607,25 +670,27 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
               onChanged: (v) => setState(() => _type = v),
             ),
             SizedBox(height: context.r(12)),
-            Row(children: [
-              Expanded(
-                child: EditField(
-                  controller: _priceCtrl,
-                  label: 'addprop_price'.tr(context),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            Row(
+              children: [
+                Expanded(
+                  child: EditField(
+                    controller: _priceCtrl,
+                    label: 'addprop_price'.tr(context),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  ),
                 ),
-              ),
-              SizedBox(width: context.r(10)),
-              Expanded(
-                child: EditField(
-                  controller: _qtyCtrl,
-                  label: 'addprop_units'.tr(context),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                SizedBox(width: context.r(10)),
+                Expanded(
+                  child: EditField(
+                    controller: _qtyCtrl,
+                    label: 'addprop_units'.tr(context),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
             SizedBox(height: context.r(12)),
             EditField(
               controller: _availCtrl,
@@ -646,8 +711,10 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
                       price: double.tryParse(_priceCtrl.text) ?? 0,
                       totalQuantity: int.tryParse(_qtyCtrl.text) ?? 1,
                       availableQuantity: int.tryParse(_availCtrl.text) ?? 1,
-                      propertyId: widget.option?.propertyId ??
-                          Supabase.instance.client.auth.currentUser?.id ?? '',
+                      propertyId:
+                          widget.option?.propertyId ??
+                          Supabase.instance.client.auth.currentUser?.id ??
+                          '',
                     ),
                   );
                 },
@@ -655,11 +722,14 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(context.r(14))),
+                    borderRadius: BorderRadius.circular(context.r(14)),
+                  ),
                   padding: context.rSymmetric(vertical: 14),
                 ),
-                child: Text('btnsave'.tr(context),
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.w800)),
+                child: Text(
+                  'btnsave'.tr(context),
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.w800),
+                ),
               ),
             ),
           ],

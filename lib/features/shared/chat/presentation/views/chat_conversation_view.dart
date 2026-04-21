@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
-import 'package:aqar_hub/features/owner/home/presentation/views/owner_profile_page.dart';
+import 'package:aqar_hub/features/owner/owner_profile/presentation/view/owner_profile_page.dart';
 import 'package:aqar_hub/features/shared/chat/data/models/conversation_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

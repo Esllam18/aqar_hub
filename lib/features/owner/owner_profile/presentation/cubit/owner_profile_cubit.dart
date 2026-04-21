@@ -1,4 +1,4 @@
-import 'package:aqar_hub/features/owner/home/data/datasources/owner_profile_datasource.dart';
+import 'package:aqar_hub/features/owner/owner_profile/data/datasources/owner_profile_datasource.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'owner_profile_state.dart';
 

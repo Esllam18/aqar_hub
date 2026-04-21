@@ -2,7 +2,7 @@ import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/navigation/navigation.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
-import 'package:aqar_hub/features/owner/home/presentation/views/add_property_view.dart';
+import 'package:aqar_hub/features/owner/add_property/presentation/view/add_property_view.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -19,8 +19,7 @@ class OwnerQuickActions extends StatelessWidget {
         content: Text('$label — ${'owner_coming_soon'.tr(context)}'),
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primary,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

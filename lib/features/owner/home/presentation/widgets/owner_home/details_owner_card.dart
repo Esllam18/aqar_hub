@@ -4,7 +4,7 @@ import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:aqar_hub/features/house_seeker/home/data/models/property_model.dart';
-import 'package:aqar_hub/features/owner/home/presentation/views/owner_profile_page.dart';
+import 'package:aqar_hub/features/owner/owner_profile/presentation/view/owner_profile_page.dart';
 import 'package:aqar_hub/features/shared/chat/chat_navigator.dart';
 import 'package:aqar_hub/features/shared/profile/data/datasources/profile_datasource_impl.dart';
 import 'package:aqar_hub/features/shared/profile/data/models/profile_model.dart';

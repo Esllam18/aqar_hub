@@ -7,7 +7,7 @@ import 'package:aqar_hub/core/location/data/egypt_locations.dart';
 import 'package:aqar_hub/core/location/models/location_node.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
-import 'package:aqar_hub/features/owner/home/data/models/add_property_form_model.dart';
+import 'package:aqar_hub/features/owner/add_property/data/models/add_property_form_model.dart';
 import 'add_property_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

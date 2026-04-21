@@ -2,7 +2,7 @@ import 'package:aqar_hub/core/helpers/app_prefs.dart';
 import 'package:aqar_hub/features/owner/home/data/models/owner_property_model.dart';
 import 'package:aqar_hub/features/owner/home/data/models/rental_option_model.dart';
 import 'package:aqar_hub/features/owner/home/data/repositories/owner_properties_repository_impl.dart';
-import 'package:aqar_hub/features/owner/home/presentation/cubit/owner_home_state.dart';
+import 'package:aqar_hub/features/owner/owner_sale/presentation/cubit/owner_home_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

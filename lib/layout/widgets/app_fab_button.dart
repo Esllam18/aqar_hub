@@ -1,7 +1,7 @@
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/services/navigation/navigation.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
-import 'package:aqar_hub/features/owner/home/presentation/views/add_property_view.dart';
+import 'package:aqar_hub/features/owner/add_property/presentation/view/add_property_view.dart';
 import 'package:flutter/material.dart';
 
 class AppFabButton extends StatefulWidget {

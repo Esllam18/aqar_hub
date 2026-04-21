@@ -6,7 +6,7 @@ import 'package:aqar_hub/features/house_seeker/favorites/presentation/cubit/favo
 import 'package:aqar_hub/features/house_seeker/favorites/presentation/views/favorites_view.dart';
 import 'package:aqar_hub/features/house_seeker/home/presentation/views/home_view.dart';
 import 'package:aqar_hub/features/owner/home/presentation/views/owner_home_view.dart';
-import 'package:aqar_hub/features/owner/home/presentation/views/owner_sale_properties_view.dart';
+import 'package:aqar_hub/features/owner/owner_sale/presentation/view/owner_sale_properties_view.dart';
 import 'package:aqar_hub/features/shared/chat/data/datasources/chat_remote_datasource.dart';
 import 'package:aqar_hub/features/shared/chat/data/repositories/chat_repository_impl.dart';
 import 'package:aqar_hub/features/shared/chat/presentation/cubit/conversation_list_cubit.dart';

@@ -5,7 +5,6 @@ import 'package:aqar_hub/features/owner/home/data/datasources/owner_properties_r
 import 'package:aqar_hub/features/owner/home/data/models/owner_property_model.dart';
 import 'package:aqar_hub/features/owner/home/data/repositories/owner_properties_repository_impl.dart';
 import 'package:aqar_hub/features/owner/home/presentation/cubit/owner_home_cubit.dart';
-import 'package:aqar_hub/features/owner/home/presentation/cubit/owner_home_state.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/dashboard/owner_activity_tip.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/dashboard/owner_alerts_section.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/dashboard/owner_kpi_row.dart';
@@ -18,8 +17,9 @@ import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/own
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/owner_property_card.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/shared/owner_error_view.dart';
 import 'package:aqar_hub/core/services/navigation/navigation.dart';
-import 'package:aqar_hub/features/owner/home/presentation/views/add_property_view.dart';
+import 'package:aqar_hub/features/owner/add_property/presentation/view/add_property_view.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
+import 'package:aqar_hub/features/owner/owner_sale/presentation/cubit/owner_home_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

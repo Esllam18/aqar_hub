@@ -1,5 +1,5 @@
-import 'package:aqar_hub/features/owner/home/data/datasources/add_property_remote_datasource.dart';
-import 'package:aqar_hub/features/owner/home/data/models/add_property_form_model.dart';
+import 'package:aqar_hub/features/owner/add_property/data/datasources/add_property_remote_datasource.dart';
+import 'package:aqar_hub/features/owner/add_property/data/models/add_property_form_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddPropertyRepositoryImpl {

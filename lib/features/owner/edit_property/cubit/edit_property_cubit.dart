@@ -7,7 +7,7 @@ import 'dart:io';
 import 'package:aqar_hub/features/owner/home/data/models/owner_property_model.dart';
 import 'package:aqar_hub/features/owner/home/data/models/rental_option_model.dart';
 import 'package:aqar_hub/features/owner/home/data/repositories/owner_properties_repository_impl.dart';
-import 'package:aqar_hub/features/owner/home/presentation/cubit/edit_property_state.dart';
+import 'package:aqar_hub/features/owner/edit_property/cubit/edit_property_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,7 +17,7 @@ class EditPropertyCubit extends Cubit<EditPropertyState> {
   final OwnerPropertyModel original;
 
   EditPropertyCubit({required this.repository, required this.original})
-      : super(const EditPropertyInitial());
+    : super(const EditPropertyInitial());
 
   Future<void> save({
     required String title,
@@ -37,7 +37,7 @@ class EditPropertyCubit extends Cubit<EditPropertyState> {
     required List<RentalOptionModel> rentalOptions,
     // Image editing
     required List<String> keptImageUrls, // existing URLs that were NOT deleted
-    required List<File> newImageFiles,   // newly picked files to upload
+    required List<File> newImageFiles, // newly picked files to upload
   }) async {
     emit(const EditPropertyLoading());
 
