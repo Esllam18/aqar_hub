@@ -1,16 +1,20 @@
 // lib/features/owner/home/presentation/widgets/ai_price_check_widget.dart
 //
-// AI Price Check — matches app design system (AppColors.primary, Cairo/Tajawal fonts)
-// All strings go through .tr(context) for full localization support.
+// AI Price Check — uses real Groq API (llama-3.3-70b) instead of the mock.
+// API key is read from .env via GROQ_API_KEY.
+// All strings use .tr(context) for full AR/EN localization.
 
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'dart:convert';
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:aqar_hub/features/owner/home/data/models/add_property_form_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 enum _CheckState { idle, loading, done, error }
 
@@ -33,71 +37,161 @@ class _AiPriceCheckWidgetState extends State<AiPriceCheckWidget> {
   AiPriceResult? _result;
   String? _errorMsg;
 
-  // ── Mock AI evaluation ─────────────────────────────────────────────────────
-  // TODO: Replace with real API call when ready.
+  // ── Groq API price estimation ──────────────────────────────────────────────
   Future<AiPriceResult> _runAiCheck(AddPropertyFormModel form) async {
-    await Future.delayed(const Duration(milliseconds: 1600));
+    final apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
+
+    // If no API key, fall back to a helpful error rather than a silent mock
+    if (apiKey.isEmpty) {
+      throw Exception('GROQ_API_KEY not set in .env');
+    }
 
     final basePrice = form.basePrice ?? 0;
-    final isFurnished = form.isFurnished;
-    final rooms = form.totalRooms ?? 1;
-    final area = form.areaM2 ?? 50;
-    final isRent = form.isRent;
 
-    double marketFactor = 1.0;
-    if (isFurnished) marketFactor += 0.15;
-    if (rooms >= 3) marketFactor += 0.10;
-    if (area > 100) marketFactor += 0.10;
+    // Map governorate slug → Arabic display name for a more accurate prompt
+    const govNames = {
+      'cairo': 'القاهرة',
+      'giza': 'الجيزة',
+      'alexandria': 'الإسكندرية',
+      'qalyubia': 'القليوبية',
+      'dakahlia': 'الدقهلية',
+      'gharbia': 'الغربية',
+      'monufia': 'المنوفية',
+      'beheira': 'البحيرة',
+      'damietta': 'دمياط',
+      'sharkia': 'الشرقية',
+      'kafr_el_sheikh': 'كفر الشيخ',
+      'ismailia': 'الإسماعيلية',
+      'suez': 'السويس',
+      'port_said': 'بورسعيد',
+      'beni_suef': 'بني سويف',
+      'fayoum': 'الفيوم',
+      'minya': 'المنيا',
+      'asyut': 'أسيوط',
+      'sohag': 'سوهاج',
+      'qena': 'قنا',
+      'luxor': 'الأقصر',
+      'aswan': 'أسوان',
+      'red_sea': 'البحر الأحمر',
+      'south_sinai': 'جنوب سيناء',
+      'north_sinai': 'شمال سيناء',
+      'matrouh': 'مطروح',
+      'new_valley': 'الوادي الجديد',
+    };
 
-    final suggested = basePrice > 0 ? basePrice * marketFactor : 0.0;
-    final minP = suggested * 0.85;
-    final maxP = suggested * 1.15;
+    final govDisplay =
+        govNames[form.governorateSlug] ?? form.governorateSlug;
+    final listingAr = form.isRent ? 'إيجار' : 'بيع';
+    final furnishedAr = form.isFurnished ? 'مفروشة' : 'غير مفروشة';
 
-    if (basePrice <= 0) {
-      return AiPriceResult(
-        suggestedPrice: 0,
-        priceLabel: 'normal',
-        confidence: AiConfidence.low,
-        explanation: 'ai_no_price_entered'.tr(context),
-      );
+    const typeNames = {
+      'apartment': 'شقة',
+      'villa': 'فيلا',
+      'studio': 'استوديو',
+      'penthouse': 'بنتهاوس',
+      'duplex': 'دوبلكس',
+      'chalet': 'شاليه',
+    };
+    final typeDisplay = typeNames[form.propertyType] ?? form.propertyType;
+
+    final prompt = '''
+أنت خبير تقييم عقارات في مصر. بناءً على المعطيات التالية، قيّم السعر المطلوب وقدّم توصية.
+
+تفاصيل العقار:
+- النوع: $typeDisplay
+- المحافظة: $govDisplay
+- المساحة: ${form.areaM2 ?? 'غير محددة'} م²
+- غرف النوم: ${form.totalRooms ?? 'غير محددة'}
+- الحمامات: ${form.bathrooms ?? 'غير محددة'}
+- التأثيث: $furnishedAr
+- نوع الإعلان: $listingAr
+- السعر المطلوب: $basePrice جنيه مصري
+
+قواعد الرد (مهم جداً):
+١. أجب فقط بـ JSON صالح — لا شرح، لا markdown، لا أكواد.
+٢. استخدم هذا الشكل بالضبط:
+{"suggested": NUMBER, "min": NUMBER, "max": NUMBER, "label": "offer"|"normal"|"verified", "confidence": "low"|"medium"|"high", "explanation_ar": "جملة واحدة قصيرة باللغة العربية"}
+
+تعريف التصنيفات:
+- offer: السعر أقل من المتوسط بـ 15% أو أكثر (صفقة ممتازة للمستأجر/المشتري)
+- verified: السعر في النطاق المعقول (±15% من المتوسط)
+- normal: السعر أعلى من المتوسط بـ 15% أو أكثر
+
+مثال على الرد:
+{"suggested": 5000, "min": 4250, "max": 5750, "label": "verified", "confidence": "high", "explanation_ar": "السعر مناسب لشقة مفروشة في هذه المنطقة"}
+''';
+
+    final response = await http
+        .post(
+          Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'model': 'llama-3.3-70b-versatile',
+            'max_tokens': 200,
+            'temperature': 0.2,
+            'messages': [
+              {'role': 'user', 'content': prompt},
+            ],
+          }),
+        )
+        .timeout(const Duration(seconds: 25));
+
+    if (response.statusCode == 429) {
+      throw Exception('quota_exceeded');
+    }
+    if (response.statusCode != 200) {
+      throw Exception('API error ${response.statusCode}');
     }
 
-    final ratio = basePrice / (suggested > 0 ? suggested : basePrice);
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final content =
+        (body['choices'] as List).first['message']['content'] as String;
 
-    if (ratio < 0.80) {
-      return AiPriceResult(
-        suggestedPrice: suggested,
-        minPrice: minP,
-        maxPrice: maxP,
-        priceLabel: 'offer',
-        confidence: AiConfidence.high,
-        explanation: 'ai_below_market'.tr(context),
-      );
+    // Strip markdown fences if model adds them
+    final clean = content
+        .replaceAll(RegExp(r'```json\s*', caseSensitive: false), '')
+        .replaceAll(RegExp(r'```\s*'), '')
+        .trim();
+
+    Map<String, dynamic> data;
+    try {
+      data = jsonDecode(clean) as Map<String, dynamic>;
+    } catch (_) {
+      // Try to extract JSON from within any surrounding text
+      final match = RegExp(r'\{.*\}', dotAll: true).firstMatch(clean);
+      if (match == null) throw Exception('Invalid JSON response from AI');
+      data = jsonDecode(match.group(0)!) as Map<String, dynamic>;
     }
 
-    if (ratio > 1.20) {
-      return AiPriceResult(
-        suggestedPrice: suggested,
-        minPrice: minP,
-        maxPrice: maxP,
-        priceLabel: 'normal',
-        confidence: AiConfidence.medium,
-        explanation: 'ai_above_market'.tr(context),
-      );
-    }
+    final suggested = (data['suggested'] as num?)?.toDouble() ?? basePrice;
+    final min = (data['min'] as num?)?.toDouble() ?? suggested * 0.85;
+    final max = (data['max'] as num?)?.toDouble() ?? suggested * 1.15;
+    final label = (data['label'] as String?)?.toLowerCase() ?? 'normal';
+    final confidenceStr =
+        (data['confidence'] as String?)?.toLowerCase() ?? 'medium';
+    final explanationAr =
+        (data['explanation_ar'] as String?) ?? '';
 
-    // Within range — verified
-    // Note: 'featured' is intentionally mapped to 'verified' here because
-    // the DB constraint only allows normal|verified|offer
+    // Validate label is one of the DB-allowed values
+    final safeLabel =
+        ['offer', 'verified', 'normal'].contains(label) ? label : 'normal';
+
+    final confidence = switch (confidenceStr) {
+      'high' => AiConfidence.high,
+      'low' => AiConfidence.low,
+      _ => AiConfidence.medium,
+    };
+
     return AiPriceResult(
       suggestedPrice: suggested,
-      minPrice: minP,
-      maxPrice: maxP,
-      priceLabel: isRent
-          ? 'verified'
-          : (basePrice > 2000000 ? 'verified' : 'verified'),
-      confidence: AiConfidence.high,
-      explanation: 'ai_fair_price'.tr(context),
+      minPrice: min,
+      maxPrice: max,
+      priceLabel: safeLabel,
+      confidence: confidence,
+      explanation: explanationAr,
     );
   }
 
@@ -119,7 +213,7 @@ class _AiPriceCheckWidgetState extends State<AiPriceCheckWidget> {
       if (!mounted) return;
       setState(() {
         _state = _CheckState.error;
-        _errorMsg = e.toString();
+        _errorMsg = e.toString().replaceAll('Exception: ', '');
       });
     }
   }
@@ -129,7 +223,7 @@ class _AiPriceCheckWidgetState extends State<AiPriceCheckWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Section header ───────────────────────────────────────────────
+        // ── Section header ────────────────────────────────────────────────
         Row(
           children: [
             Container(
@@ -179,7 +273,7 @@ class _AiPriceCheckWidgetState extends State<AiPriceCheckWidget> {
         ),
         SizedBox(height: context.r(14)),
 
-        // ── Body ─────────────────────────────────────────────────────────
+        // ── Body ──────────────────────────────────────────────────────────
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           transitionBuilder: (child, animation) =>
@@ -189,7 +283,8 @@ class _AiPriceCheckWidgetState extends State<AiPriceCheckWidget> {
               key: const ValueKey('idle'),
               onCheck: _check,
             ),
-            _CheckState.loading => const _LoadingCard(key: ValueKey('loading')),
+            _CheckState.loading =>
+              const _LoadingCard(key: ValueKey('loading')),
             _CheckState.done => _ResultCard(
               key: const ValueKey('done'),
               result: _result!,
@@ -348,25 +443,26 @@ class _LoadingCard extends StatelessWidget {
 class _ResultCard extends StatelessWidget {
   final AiPriceResult result;
   final VoidCallback onReCheck;
-  const _ResultCard({super.key, required this.result, required this.onReCheck});
+  const _ResultCard(
+      {super.key, required this.result, required this.onReCheck});
 
   Color get _accentColor => switch (result.priceLabel) {
-    'offer' => const Color(0xFFF59E0B),
-    'verified' => const Color(0xFF059669),
-    _ => AppColors.primary,
-  };
+        'offer' => const Color(0xFFF59E0B),
+        'verified' => const Color(0xFF059669),
+        _ => AppColors.primary,
+      };
 
   IconData get _accentIcon => switch (result.priceLabel) {
-    'offer' => Icons.local_offer_rounded,
-    'verified' => Icons.verified_rounded,
-    _ => Icons.check_circle_outline_rounded,
-  };
+        'offer' => Icons.local_offer_rounded,
+        'verified' => Icons.verified_rounded,
+        _ => Icons.check_circle_outline_rounded,
+      };
 
   Color get _confidenceColor => switch (result.confidence) {
-    AiConfidence.high => const Color(0xFF059669),
-    AiConfidence.medium => const Color(0xFFF59E0B),
-    AiConfidence.low => Colors.grey.shade500,
-  };
+        AiConfidence.high => const Color(0xFF059669),
+        AiConfidence.medium => const Color(0xFFF59E0B),
+        AiConfidence.low => Colors.grey.shade500,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -390,7 +486,7 @@ class _ResultCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Label row ──────────────────────────────────────────────────
+          // ── Label row ────────────────────────────────────────────────
           Row(
             children: [
               Container(
@@ -417,7 +513,8 @@ class _ResultCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: context.rSymmetric(horizontal: 8, vertical: 4),
+                padding:
+                    context.rSymmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _confidenceColor.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(context.r(8)),
@@ -436,7 +533,7 @@ class _ResultCard extends StatelessWidget {
 
           SizedBox(height: context.r(14)),
 
-          // ── Price stats ────────────────────────────────────────────────
+          // ── Price stats ──────────────────────────────────────────────
           if (result.suggestedPrice > 0) ...[
             Row(
               children: [
@@ -463,7 +560,7 @@ class _ResultCard extends StatelessWidget {
             SizedBox(height: context.r(12)),
           ],
 
-          // ── Explanation ────────────────────────────────────────────────
+          // ── Explanation ──────────────────────────────────────────────
           Container(
             width: double.infinity,
             padding: context.rAll(12),
@@ -496,7 +593,7 @@ class _ResultCard extends StatelessWidget {
 
           SizedBox(height: context.r(8)),
 
-          // ── Re-check ──────────────────────────────────────────────────
+          // ── Re-check ─────────────────────────────────────────────────
           Align(
             alignment: AlignmentDirectional.centerEnd,
             child: TextButton.icon(

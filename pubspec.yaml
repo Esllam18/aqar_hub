@@ -44,8 +44,8 @@ dependencies:
   record:
   path_provider:
   intl:
+  flutter_dotenv: ^6.0.0
   path: ^1.9.1
-  flutter_dotenv:
 
 dev_dependencies:
   flutter_test:
