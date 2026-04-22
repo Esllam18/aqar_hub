@@ -51,9 +51,8 @@ class _LoginViewState extends State<LoginView> {
           : null;
       _passwordError = _passwordCtrl.text.isEmpty
           ? 'val_password_required'
-          : _passwordCtrl.text.length <
-                6 // ← remove the quotes
-          ? 'val_password_short'
+          : _passwordCtrl.text.length < 8
+          ? 'val_password_min_8'
           : null;
     });
     return _emailError == null && _passwordError == null;

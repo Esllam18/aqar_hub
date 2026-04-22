@@ -107,7 +107,7 @@ class _SignUpViewState extends State<SignUpView> {
     } else if (state is AuthError) {
       CustomSnackBar.show(
         context,
-        message: state.message,
+        message: state.message.tr(context),
         type: SnackBarType.error,
       );
     }

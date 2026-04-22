@@ -1,13 +1,8 @@
-// lib/features/owner/analytics/presentation/view/owner_analytics_view.dart
-//
-// Full Owner Analytics / Statistics screen.
-// Data is fetched directly from Supabase properties + rental_options.
-// No external chart library required — all charts are drawn with CustomPaint.
-
 // ignore_for_file: deprecated_member_use
 
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
+import 'package:intl/intl.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:aqar_hub/features/owner/analytics/presentation/cubit/owner_analytics_cubit.dart';
 import 'package:flutter/material.dart';
@@ -80,21 +75,21 @@ class _LoadingBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(color: AppColors.primary),
-            SizedBox(height: context.r(14)),
-            Text(
-              'analytics_loading'.tr(context),
-              style: GoogleFonts.tajawal(
-                fontSize: context.sp(13),
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const CircularProgressIndicator(color: AppColors.primary),
+        SizedBox(height: context.r(14)),
+        Text(
+          'analytics_loading'.tr(context),
+          style: GoogleFonts.tajawal(
+            fontSize: context.sp(13),
+            color: AppColors.textSecondary,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────
@@ -105,36 +100,42 @@ class _ErrorBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: context.rAll(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline_rounded,
-                  size: context.r(48), color: AppColors.error),
-              SizedBox(height: context.r(12)),
-              Text(message,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.tajawal(
-                      fontSize: context.sp(13),
-                      color: AppColors.textSecondary)),
-              SizedBox(height: context.r(20)),
-              ElevatedButton.icon(
-                onPressed: () =>
-                    context.read<OwnerAnalyticsCubit>().refresh(),
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text('retry'.tr(context)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(context.r(12))),
-                ),
-              ),
-            ],
+    child: Padding(
+      padding: context.rAll(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: context.r(48),
+            color: AppColors.error,
           ),
-        ),
-      );
+          SizedBox(height: context.r(12)),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.tajawal(
+              fontSize: context.sp(13),
+              color: AppColors.textSecondary,
+            ),
+          ),
+          SizedBox(height: context.r(20)),
+          ElevatedButton.icon(
+            onPressed: () => context.read<OwnerAnalyticsCubit>().refresh(),
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text('retry'.tr(context)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(context.r(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 // ── Loaded Body ───────────────────────────────────────────────────────────────
@@ -181,11 +182,13 @@ class _LoadedBody extends StatelessWidget {
             _SectionTitle(title: 'analytics_property_types'.tr(context)),
             _DonutChart(
               items: data.byPropertyType.entries
-                  .map((e) => _PieSlice(
-                        label: 'property_type_${e.key}'.tr(context),
-                        value: e.value.toDouble(),
-                        color: _typeColor(e.key),
-                      ))
+                  .map(
+                    (e) => _PieSlice(
+                      label: 'property_type_${e.key}'.tr(context),
+                      value: e.value.toDouble(),
+                      color: _typeColor(e.key),
+                    ),
+                  )
                   .toList(),
             ),
           ],
@@ -198,7 +201,10 @@ class _LoadedBody extends StatelessWidget {
 
           // ── Furnished Split ──────────────────────────────────────────────
           _SectionTitle(title: 'analytics_furnished'.tr(context)),
-          _FurnishedSplit(furnished: data.furnished, unfurnished: data.unfurnished),
+          _FurnishedSplit(
+            furnished: data.furnished,
+            unfurnished: data.unfurnished,
+          ),
 
           SizedBox(height: context.r(20)),
         ],
@@ -224,35 +230,38 @@ class _LoadedBody extends StatelessWidget {
 class _EmptyAnalytics extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: context.rAll(40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.bar_chart_rounded,
-                  size: context.r(72), color: Colors.grey.shade300),
-              SizedBox(height: context.r(16)),
-              Text(
-                'analytics_empty_title'.tr(context),
-                style: GoogleFonts.cairo(
-                  fontSize: context.sp(16),
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              SizedBox(height: context.r(8)),
-              Text(
-                'analytics_empty_body'.tr(context),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.tajawal(
-                  fontSize: context.sp(13),
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+    child: Padding(
+      padding: context.rAll(40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.bar_chart_rounded,
+            size: context.r(72),
+            color: Colors.grey.shade300,
           ),
-        ),
-      );
+          SizedBox(height: context.r(16)),
+          Text(
+            'analytics_empty_title'.tr(context),
+            style: GoogleFonts.cairo(
+              fontSize: context.sp(16),
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: context.r(8)),
+          Text(
+            'analytics_empty_body'.tr(context),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.tajawal(
+              fontSize: context.sp(13),
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 // ── Hero Banner ───────────────────────────────────────────────────────────────
@@ -293,8 +302,11 @@ class _HeroBanner extends StatelessWidget {
                   color: Colors.white.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(context.r(10)),
                 ),
-                child: Icon(Icons.bar_chart_rounded,
-                    color: Colors.white, size: context.r(20)),
+                child: Icon(
+                  Icons.bar_chart_rounded,
+                  color: Colors.white,
+                  size: context.r(20),
+                ),
               ),
               SizedBox(width: context.r(10)),
               Text(
@@ -351,29 +363,36 @@ class _HeroChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  const _HeroChip({required this.icon, required this.label, required this.color});
+  const _HeroChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: context.rSymmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(context.r(8)),
-          border: Border.all(color: color.withOpacity(0.40)),
+    padding: context.rSymmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.15),
+      borderRadius: BorderRadius.circular(context.r(8)),
+      border: Border.all(color: color.withOpacity(0.40)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: context.r(12), color: color),
+        SizedBox(width: context.r(4)),
+        Text(
+          label,
+          style: GoogleFonts.cairo(
+            fontSize: context.sp(10),
+            color: color,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: context.r(12), color: color),
-            SizedBox(width: context.r(4)),
-            Text(label,
-                style: GoogleFonts.cairo(
-                    fontSize: context.sp(10),
-                    color: color,
-                    fontWeight: FontWeight.w700)),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 // ── Section Title ─────────────────────────────────────────────────────────────
@@ -384,29 +403,29 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: context.rOnly(left: 20, right: 20, top: 22, bottom: 10),
-        child: Row(
-          children: [
-            Container(
-              width: context.r(4),
-              height: context.r(18),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            SizedBox(width: context.r(8)),
-            Text(
-              title,
-              style: GoogleFonts.cairo(
-                fontSize: context.sp(14),
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
+    padding: context.rOnly(left: 20, right: 20, top: 22, bottom: 10),
+    child: Row(
+      children: [
+        Container(
+          width: context.r(4),
+          height: context.r(18),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(4),
+          ),
         ),
-      );
+        SizedBox(width: context.r(8)),
+        Text(
+          title,
+          style: GoogleFonts.cairo(
+            fontSize: context.sp(14),
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── KPI Grid ──────────────────────────────────────────────────────────────────
@@ -479,11 +498,12 @@ class _KpiItem {
   final String label;
   final String value;
   final Color color;
-  const _KpiItem(
-      {required this.icon,
-      required this.label,
-      required this.value,
-      required this.color});
+  const _KpiItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 }
 
 class _KpiCard extends StatelessWidget {
@@ -492,47 +512,47 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(context.r(16)),
-          boxShadow: AppShadows.soft,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(context.r(16)),
+      boxShadow: AppShadows.soft,
+    ),
+    padding: context.rAll(12),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: context.r(36),
+          height: context.r(36),
+          decoration: BoxDecoration(
+            color: item.color.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(context.r(10)),
+          ),
+          child: Icon(item.icon, color: item.color, size: context.r(18)),
         ),
-        padding: context.rAll(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: context.r(36),
-              height: context.r(36),
-              decoration: BoxDecoration(
-                color: item.color.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(context.r(10)),
-              ),
-              child: Icon(item.icon, color: item.color, size: context.r(18)),
-            ),
-            SizedBox(height: context.r(8)),
-            Text(
-              item.value,
-              style: GoogleFonts.cairo(
-                fontSize: context.sp(18),
-                fontWeight: FontWeight.w900,
-                color: const Color(0xFF1B2D5E),
-              ),
-            ),
-            Text(
-              item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.tajawal(
-                fontSize: context.sp(9),
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+        SizedBox(height: context.r(8)),
+        Text(
+          item.value,
+          style: GoogleFonts.cairo(
+            fontSize: context.sp(18),
+            fontWeight: FontWeight.w900,
+            color: const Color(0xFF1B2D5E),
+          ),
         ),
-      );
+        Text(
+          item.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.tajawal(
+            fontSize: context.sp(9),
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Listing Type Split ────────────────────────────────────────────────────────
@@ -544,10 +564,8 @@ class _ListingTypeSplit extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = data.totalProperties;
-    final rentPct =
-        total == 0 ? 0.0 : data.rentProperties / total;
-    final salePct =
-        total == 0 ? 0.0 : data.saleProperties / total;
+    final rentPct = total == 0 ? 0.0 : data.rentProperties / total;
+    final salePct = total == 0 ? 0.0 : data.saleProperties / total;
 
     return Container(
       margin: context.rSymmetric(horizontal: 16),
@@ -614,57 +632,74 @@ class _SplitCard extends StatelessWidget {
   final int count;
   final double pct;
   final Color color;
-  const _SplitCard(
-      {required this.icon,
-      required this.label,
-      required this.count,
-      required this.pct,
-      required this.color});
+  const _SplitCard({
+    required this.icon,
+    required this.label,
+    required this.count,
+    required this.pct,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: context.rAll(12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(context.r(12)),
+    padding: context.rAll(12),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.06),
+      borderRadius: BorderRadius.circular(context.r(12)),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: context.r(34),
+          height: context.r(34),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(context.r(9)),
+          ),
+          child: Icon(icon, color: color, size: context.r(17)),
         ),
-        child: Row(
+        SizedBox(width: context.r(8)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: context.r(34),
-              height: context.r(34),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(context.r(9)),
+            Text(
+              '$count',
+              style: GoogleFonts.cairo(
+                fontSize: context.sp(18),
+                fontWeight: FontWeight.w900,
+                color: color,
               ),
-              child: Icon(icon, color: color, size: context.r(17)),
             ),
-            SizedBox(width: context.r(8)),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('$count',
-                    style: GoogleFonts.cairo(
-                        fontSize: context.sp(18),
-                        fontWeight: FontWeight.w900,
-                        color: color)),
-                Text(label,
-                    style: GoogleFonts.tajawal(
-                        fontSize: context.sp(10),
-                        color: AppColors.textSecondary)),
-                Text('${(pct * 100).toStringAsFixed(0)}%',
-                    style: GoogleFonts.cairo(
-                        fontSize: context.sp(10),
-                        fontWeight: FontWeight.w700,
-                        color: color.withOpacity(0.70))),
-              ],
+            Text(
+              label,
+              style: GoogleFonts.tajawal(
+                fontSize: context.sp(10),
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Text(
+              '${(pct * 100).toStringAsFixed(0)}%',
+              style: GoogleFonts.cairo(
+                fontSize: context.sp(10),
+                fontWeight: FontWeight.w700,
+                color: color.withOpacity(0.70),
+              ),
             ),
           ],
         ),
-      );
+      ],
+    ),
+  );
 }
 
 // ── Monthly Bar Chart ─────────────────────────────────────────────────────────
+// Converts a month number string ("1".."12") to a short localized month name.
+String _localizedMonth(BuildContext context, String monthStr) {
+  final monthNum = int.tryParse(monthStr) ?? 1;
+  final locale = Localizations.localeOf(context).languageCode;
+  final dt = DateTime(2000, monthNum);
+  return DateFormat.MMM(locale).format(dt);
+}
 
 class _MonthlyBarChart extends StatelessWidget {
   final List<MonthlyCount> months;
@@ -672,8 +707,9 @@ class _MonthlyBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxVal =
-        months.isEmpty ? 1 : months.map((m) => m.count).reduce((a, b) => a > b ? a : b);
+    final maxVal = months.isEmpty
+        ? 1
+        : months.map((m) => m.count).reduce((a, b) => a > b ? a : b);
 
     return Container(
       margin: context.rSymmetric(horizontal: 16),
@@ -721,7 +757,8 @@ class _MonthlyBarChart extends StatelessWidget {
                                 ? AppColors.primary
                                 : AppColors.primary.withOpacity(0.25),
                             borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(context.r(6))),
+                              top: Radius.circular(context.r(6)),
+                            ),
                           ),
                         ),
                       ],
@@ -734,16 +771,18 @@ class _MonthlyBarChart extends StatelessWidget {
           SizedBox(height: context.r(8)),
           Row(
             children: months
-                .map((m) => Expanded(
-                      child: Text(
-                        m.label,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.tajawal(
-                          fontSize: context.sp(9.5),
-                          color: AppColors.textSecondary,
-                        ),
+                .map(
+                  (m) => Expanded(
+                    child: Text(
+                      _localizedMonth(context, m.label),
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.tajawal(
+                        fontSize: context.sp(9.5),
+                        color: AppColors.textSecondary,
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -758,7 +797,11 @@ class _PieSlice {
   final String label;
   final double value;
   final Color color;
-  const _PieSlice({required this.label, required this.value, required this.color});
+  const _PieSlice({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 }
 
 class _DonutChart extends StatelessWidget {
@@ -787,10 +830,7 @@ class _DonutChart extends StatelessWidget {
                   width: context.r(140),
                   height: context.r(140),
                   child: CustomPaint(
-                    painter: _DonutPainter(
-                      slices: items,
-                      total: total,
-                    ),
+                    painter: _DonutPainter(slices: items, total: total),
                   ),
                 ),
                 SizedBox(width: context.r(20)),
@@ -890,7 +930,6 @@ class _DonutPainter extends CustomPainter {
           fontWeight: FontWeight.w900,
         ),
       ),
-      textDirection: TextDirection.ltr,
     );
     textPainter.layout();
     textPainter.paint(
@@ -992,8 +1031,7 @@ class _CityList extends StatelessWidget {
                     value: pct,
                     minHeight: context.r(5),
                     backgroundColor: AppColors.primary.withOpacity(0.08),
-                    valueColor:
-                        const AlwaysStoppedAnimation(AppColors.primary),
+                    valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                   ),
                 ),
               ],
@@ -1086,44 +1124,45 @@ class _FurnishedChip extends StatelessWidget {
   final int count;
   final Color color;
   final IconData icon;
-  const _FurnishedChip(
-      {required this.label,
-      required this.count,
-      required this.color,
-      required this.icon});
+  const _FurnishedChip({
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: context.rAll(12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.07),
-          borderRadius: BorderRadius.circular(context.r(12)),
-        ),
-        child: Row(
+    padding: context.rAll(12),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.07),
+      borderRadius: BorderRadius.circular(context.r(12)),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: color, size: context.r(20)),
+        SizedBox(width: context.r(8)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: context.r(20)),
-            SizedBox(width: context.r(8)),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$count',
-                  style: GoogleFonts.cairo(
-                    fontSize: context.sp(18),
-                    fontWeight: FontWeight.w900,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: GoogleFonts.tajawal(
-                    fontSize: context.sp(10),
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+            Text(
+              '$count',
+              style: GoogleFonts.cairo(
+                fontSize: context.sp(18),
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: GoogleFonts.tajawal(
+                fontSize: context.sp(10),
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
-      );
+      ],
+    ),
+  );
 }

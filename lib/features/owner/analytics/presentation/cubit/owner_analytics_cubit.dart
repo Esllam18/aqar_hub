@@ -10,21 +10,7 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
 
   String? get _uid => _supabase.auth.currentUser?.id;
 
-  static const _monthNames = [
-    '',
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
+  // Month names removed — use intl in view
 
   Future<void> load() async {
     final uid = _uid;
@@ -65,7 +51,7 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
       final months = List.generate(6, (i) {
         final dt = DateTime(now.year, now.month - (5 - i), 1);
         return MonthlyCount(
-          label: _monthNames[dt.month],
+          label: dt.month.toString(),
           year: dt.year,
           month: dt.month,
           count: 0,
@@ -111,7 +97,8 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
         // Rental options breakdown
         final rentalOptions = row['rental_options'] as List? ?? [];
         for (final opt in rentalOptions) {
-          final optType = (opt as Map<String, dynamic>)['type'] as String? ?? '';
+          final optType =
+              (opt as Map<String, dynamic>)['type'] as String? ?? '';
           if (optType.isNotEmpty) {
             byRentalType[optType] = (byRentalType[optType] ?? 0) + 1;
           }
