@@ -29,9 +29,7 @@ Future<void> _fcmBackgroundHandler(RemoteMessage message) async {}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-    FirebaseMessaging.onBackgroundMessage(_fcmBackgroundHandler);
-
-  WidgetsFlutterBinding.ensureInitialized();
+  FirebaseMessaging.onBackgroundMessage(_fcmBackgroundHandler);
 
   await dotenv.load(fileName: '.env');
 

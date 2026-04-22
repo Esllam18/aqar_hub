@@ -1,15 +1,10 @@
-// lib/features/owner/home/presentation/views/owner_profile_page.dart
-//
-// Orchestrator only — 1,212 lines → ~160 lines.
-// All UI widgets are in owner_profile/ subfolder.
-
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:aqar_hub/features/house_seeker/home/data/models/property_model.dart';
 import 'package:aqar_hub/features/house_seeker/home/presentation/views/property_details_view.dart';
-import 'package:aqar_hub/features/owner/owner_profile/owner_profile_header.dart';
-import 'package:aqar_hub/features/owner/owner_profile/owner_profile_widgets.dart';
+import 'package:aqar_hub/features/owner/owner_profile/presentation/widgets/owner_profile_header.dart';
+import 'package:aqar_hub/features/owner/owner_profile/presentation/widgets/owner_profile_widgets.dart';
 import 'package:aqar_hub/features/shared/chat/chat_navigator.dart';
 import 'package:aqar_hub/features/shared/profile/data/models/profile_model.dart';
 import 'package:flutter/material.dart';
@@ -178,12 +173,14 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   String? get _displayEmail => _profile?.email?.trim();
   String? get _displayAddress => _profile?.address?.trim();
 
+  // FIX #2: Use the profile's own created_at as the "Member Since" date.
+  // This is the actual account join date, not the oldest property date.
+  // Falls back to '—' only when the profile has no created_at (very old records).
   String get _memberSince {
-    if (_properties.isEmpty) return '—';
-    final oldest = _properties.reduce(
-      (a, b) => a.createdAt.isBefore(b.createdAt) ? a : b,
-    );
-    const months = [
+    final dt = _profile?.createdAt;
+    if (dt == null) return '—';
+
+    const monthNames = [
       '',
       'Jan',
       'Feb',
@@ -198,7 +195,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
       'Nov',
       'Dec',
     ];
-    return '${months[oldest.createdAt.month]} ${oldest.createdAt.year}';
+    return '${monthNames[dt.month]} ${dt.year}';
   }
 
   // Reads the actual DB role — never hardcoded.

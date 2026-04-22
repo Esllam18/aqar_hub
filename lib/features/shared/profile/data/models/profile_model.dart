@@ -12,6 +12,8 @@ class ProfileModel {
   final String? dateOfBirth;
   final int favoritesCount;
   final int apartmentsCount;
+  // ── NEW ──────────────────────────────────────────────────────────────────
+  final DateTime? createdAt;
 
   const ProfileModel({
     required this.uid,
@@ -27,6 +29,7 @@ class ProfileModel {
     this.dateOfBirth,
     this.favoritesCount = 0,
     this.apartmentsCount = 0,
+    this.createdAt, // ── NEW
   });
 
   String get fullName => '${firstName ?? ''} ${lastName ?? ''}'.trim();
@@ -46,6 +49,10 @@ class ProfileModel {
     dateOfBirth: m['date_of_birth'] as String?,
     favoritesCount: (m['favorites_count'] as int?) ?? 0,
     apartmentsCount: (m['apartments_count'] as int?) ?? 0,
+    // ── NEW: parse created_at from DB ───────────────────────────────────
+    createdAt: m['created_at'] != null
+        ? DateTime.tryParse(m['created_at'] as String)
+        : null,
   );
 
   factory ProfileModel.fromJson(Map<String, dynamic> m) =>
@@ -65,6 +72,7 @@ class ProfileModel {
     if (profileImageUrl != null) 'profile_image_url': profileImageUrl,
     if (address != null) 'address': address,
     if (dateOfBirth != null) 'date_of_birth': dateOfBirth,
+    // Note: created_at is managed by the DB — never overwrite it on update.
   };
 
   Map<String, dynamic> toJson() => toMap();
@@ -82,6 +90,7 @@ class ProfileModel {
     String? profileImageUrl,
     String? address,
     String? dateOfBirth,
+    DateTime? createdAt, // ── NEW
   }) => ProfileModel(
     uid: uid,
     email: email ?? this.email,
@@ -96,5 +105,6 @@ class ProfileModel {
     profileImageUrl: profileImageUrl ?? this.profileImageUrl,
     address: address ?? this.address,
     dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+    createdAt: createdAt ?? this.createdAt, // ── NEW
   );
 }

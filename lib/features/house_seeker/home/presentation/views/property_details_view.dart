@@ -1,8 +1,3 @@
-// lib/features/house_seeker/home/presentation/views/property_details_view.dart
-//
-// Orchestrator only — all UI sections are in property_details/ subfolder.
-// 1,362 lines → ~130 lines.
-
 import 'package:aqar_hub/core/animations/app_animations.dart';
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/services/navigation/navigation.dart';
@@ -43,14 +38,56 @@ class PropertyDetailsView extends StatefulWidget {
 
 class _PropertyDetailsViewState extends State<PropertyDetailsView> {
   bool _descExpanded = false;
+  final _supabase = Supabase.instance.client;
 
   bool get _isOwner =>
       widget.fromChat ||
       widget.property.ownerId.isEmpty ||
-      Supabase.instance.client.auth.currentUser?.id == widget.property.ownerId;
+      _supabase.auth.currentUser?.id == widget.property.ownerId;
+
+  // ── FIX #5: Increment viewed_count when a non-owner opens this screen ──────
+  @override
+  void initState() {
+    super.initState();
+    if (!_isOwner) {
+      _incrementViewedCount();
+    }
+  }
+
+  // Calls the atomic Supabase RPC function. Fire-and-forget — never blocks UI.
+  Future<void> _incrementViewedCount() async {
+    try {
+      final ownerId = widget.property.ownerId;
+      if (ownerId.isEmpty) return;
+      await _supabase.rpc(
+        'increment_viewed_count',
+        params: {'owner_id_input': ownerId},
+      );
+    } catch (e) {
+      // Non-fatal — counter drift is acceptable. Log only in debug.
+      debugPrint('[PropertyDetails] increment_viewed_count error: $e');
+    }
+  }
+
+  // ── FIX #6: Increment contacted_count before opening WhatsApp or chat ──────
+  Future<void> _incrementContactedCount() async {
+    try {
+      final ownerId = widget.property.ownerId;
+      if (ownerId.isEmpty) return;
+      await _supabase.rpc(
+        'increment_contacted_count',
+        params: {'owner_id_input': ownerId},
+      );
+    } catch (e) {
+      debugPrint('[PropertyDetails] increment_contacted_count error: $e');
+    }
+  }
 
   Future<void> _openWhatsApp(String? phone) async {
     if (phone == null || phone.trim().isEmpty) return;
+    // Record contact before launching external app
+    await _incrementContactedCount();
+
     final clean = phone.replaceAll(RegExp(r'\D'), '');
     final number = clean.startsWith('0')
         ? '2$clean'
@@ -79,13 +116,17 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
     }
   }
 
-  void _openChat(BuildContext ctx) => ChatNavigator.openChat(
-    ctx,
-    otherUserId: widget.property.ownerId,
-    otherUserName: widget.property.ownerName ?? '',
-    otherUserAvatar: widget.property.ownerAvatar,
-    property: widget.property,
-  );
+  void _openChat(BuildContext ctx) {
+    // Record contact before opening chat
+    _incrementContactedCount();
+    ChatNavigator.openChat(
+      ctx,
+      otherUserId: widget.property.ownerId,
+      otherUserName: widget.property.ownerName ?? '',
+      otherUserAvatar: widget.property.ownerAvatar,
+      property: widget.property,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

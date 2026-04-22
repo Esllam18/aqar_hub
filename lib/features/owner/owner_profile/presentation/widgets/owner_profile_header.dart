@@ -1,7 +1,3 @@
-// lib/features/owner/home/presentation/views/owner_profile/owner_profile_header.dart
-//
-// Gradient sliver header with avatar, role badge, city, and CTA buttons.
-
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';

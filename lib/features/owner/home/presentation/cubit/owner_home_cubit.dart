@@ -48,12 +48,20 @@ class OwnerHomeCubit extends Cubit<OwnerHomeState> {
     }
   }
 
+  // FIX #4: Log background refresh errors instead of swallowing them silently.
+  // The behavior (keep showing cache) is unchanged — but now errors are visible
+  // in debug logs so they can be diagnosed during development and testing.
   Future<void> _backgroundRefresh(String uid) async {
     try {
       final properties = await repository.getOwnerProperties(uid);
       _writeCache(properties);
       if (!isClosed) emit(OwnerHomeLoaded(properties: properties));
-    } catch (_) {}
+    } catch (e, s) {
+      // Background refresh failed — stale cache stays displayed (acceptable UX).
+      // We log the error so it is visible during development.
+      debugPrint('OwnerHomeCubit._backgroundRefresh error: $e');
+      debugPrintStack(stackTrace: s);
+    }
   }
 
   Future<void> refresh() async {
