@@ -14,6 +14,7 @@ import 'package:aqar_hub/features/shared/chat/presentation/views/chat/chat_video
 import 'package:aqar_hub/features/shared/chat/presentation/views/chat/chat_voice_bubble.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -27,7 +28,10 @@ class MessageBubble extends StatelessWidget {
   final bool isMine;
   const MessageBubble({super.key, required this.message, required this.isMine});
 
-  String _time(DateTime dt) => DateFormat.jm().format(dt.toLocal());
+  String _time(DateTime dt, BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+    return DateFormat.jm(locale).format(dt.toLocal());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +62,7 @@ class MessageBubble extends StatelessWidget {
       bubble = TextBubble(
         text: message.content ?? '',
         isMine: isMine,
-        time: _time(message.createdAt),
+        time: _time(message.createdAt, context),
         isRead: message.isRead,
       );
     }
@@ -78,7 +82,7 @@ class MessageBubble extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _time(message.createdAt),
+                  _time(message.createdAt, context),
                   style: GoogleFonts.tajawal(
                     fontSize: context.sp(10),
                     color: Colors.grey.shade500,
@@ -209,26 +213,95 @@ class PropertyCardBubble extends StatelessWidget {
     required this.isMine,
   });
 
-  void _open(BuildContext context) => Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => PropertyDetailsView(
-        property: PropertyModel(
-          id: meta.propertyId,
-          ownerId: '',
-          title: meta.title,
-          description: '',
-          city: meta.city,
-          address: '',
-          listingType: meta.isForSale ? 'sale' : 'rent',
-          createdAt: DateTime.now(),
-          basePrice: meta.price,
-          imageUrls: meta.imageUrl != null ? [meta.imageUrl!] : [],
+  Future<void> _open(BuildContext context) async {
+    // Show loading indicator while fetching full property data
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      final data = await Supabase.instance.client
+          .from('properties')
+          .select(
+            '*, rental_options(*), profiles!properties_owner_id_fkey(id,first_name,last_name,profile_image_url,phone_number)',
+          )
+          .eq('id', meta.propertyId)
+          .maybeSingle();
+
+      if (!context.mounted) return;
+      Navigator.of(context).pop(); // close loading dialog
+
+      if (data == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لم يتم العثور على العقار'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      final property = _buildPropertyModel(data);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              PropertyDetailsView(property: property, fromChat: true),
         ),
-        fromChat: true,
-      ),
-    ),
-  );
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.of(context).pop(); // close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطأ في تحميل العقار: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  PropertyModel _buildPropertyModel(Map<String, dynamic> m) {
+    final imageUrls = <String>[];
+    final rawUrls = m['image_urls'];
+    if (rawUrls is List) {
+      imageUrls.addAll(rawUrls.map((e) => e.toString()));
+    }
+    return PropertyModel(
+      id: m['id']?.toString() ?? meta.propertyId,
+      ownerId: m['owner_id']?.toString() ?? '',
+      title: m['title']?.toString() ?? meta.title,
+      description: m['description']?.toString() ?? '',
+      city: m['city']?.toString() ?? meta.city,
+      address: m['address']?.toString() ?? '',
+      latitude: (m['latitude'] as num?)?.toDouble(),
+      longitude: (m['longitude'] as num?)?.toDouble(),
+      totalRooms: m['total_rooms'] as int?,
+      totalBeds: m['total_beds'] as int?,
+      bathrooms: m['bathrooms'] as int?,
+      areaM2: (m['area_m2'] as num?)?.toDouble(),
+      isFurnished: m['is_furnished'] as bool? ?? false,
+      listingType:
+          m['listing_type']?.toString() ?? (meta.isForSale ? 'sale' : 'rent'),
+      targetAudience: m['target_audience']?.toString() ?? 'all',
+      propertyType: m['property_type']?.toString() ?? 'apartment',
+      isRented: m['is_rented'] as bool? ?? false,
+      basePrice: (m['base_price'] as num?)?.toDouble() ?? meta.price,
+      imageUrls: imageUrls.isNotEmpty
+          ? imageUrls
+          : (meta.imageUrl != null ? [meta.imageUrl!] : []),
+      videoUrl: m['video_url']?.toString(),
+      governorateSlug: m['governorate_slug']?.toString(),
+      citySlug: m['city_slug']?.toString(),
+      locationPath: m['location_path']?.toString(),
+      createdAt: m['created_at'] != null
+          ? DateTime.parse(m['created_at'].toString())
+          : DateTime.now(),
+      amenities:
+          (m['amenities'] as List?)?.map((e) => e.toString()).toList() ?? [],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

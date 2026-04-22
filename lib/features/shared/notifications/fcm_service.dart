@@ -1,9 +1,4 @@
-// lib/features/shared/notifications/fcm_service.dart
-//
-// Singleton owning ALL Firebase Cloud Messaging concerns.
-// Sections: init → permissions → local notifications → listeners
-//           → token management → send push → log notification
-
+import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -67,14 +62,36 @@ class FcmService {
     }
   }
 
+  /// Show a local notification with the FCM data encoded as payload
+  /// so that _onLocalTap can navigate to the right screen when tapped.
   void _showLocal(RemoteMessage message) {
     final n = message.notification;
     if (n == null) return;
-    _local.show(n.hashCode, n.title, n.body, NotificationChannel.details);
+
+    // Encode the message data as a JSON string payload
+    // so the tap handler can parse it and navigate correctly.
+    final payloadJson = jsonEncode(message.data);
+
+    _local.show(
+      n.hashCode,
+      n.title,
+      n.body,
+      NotificationChannel.details,
+      payload: payloadJson,
+    );
   }
 
+  /// Called when the user taps a local notification shown while app is foreground.
   void _onLocalTap(NotificationResponse details) {
     debugPrint('[FCM-LOCAL-TAP] ${details.payload}');
+    final raw = details.payload;
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      _onTap?.call(NotificationPayload.fromMap(data));
+    } catch (e) {
+      debugPrint('[FCM] _onLocalTap parse error: $e');
+    }
   }
 
   // ── Listeners ─────────────────────────────────────────────────────────────

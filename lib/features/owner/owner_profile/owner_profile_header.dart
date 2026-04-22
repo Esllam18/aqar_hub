@@ -123,8 +123,11 @@ class OwnerProfileSliverHeader extends StatelessWidget {
                           ? CachedNetworkImageProvider(displayAvatar!)
                           : null,
                       child: !hasAvatar
-                          ? Icon(Icons.person_rounded,
-                              size: context.r(44), color: Colors.white70)
+                          ? Icon(
+                              Icons.person_rounded,
+                              size: context.r(44),
+                              color: Colors.white70,
+                            )
                           : null,
                     ),
                   ),
@@ -145,30 +148,30 @@ class OwnerProfileSliverHeader extends StatelessWidget {
                   ),
                   SizedBox(height: context.r(6)),
 
-                  // Role badge — reads from DB, never hardcoded
-                  if (roleLabel.isNotEmpty)
-                    Container(
-                      padding:
-                          context.rSymmetric(horizontal: 14, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius:
-                            BorderRadius.circular(context.r(20)),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: Text(
-                        isSelf
-                            ? 'owner_profile_is_self'.tr(context)
-                            : roleLabel,
-                        style: GoogleFonts.tajawal(
-                          fontSize: context.sp(12),
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                  // // Role badge — reads from DB, never hardcoded
+                  // if (roleLabel.isNotEmpty)
+                  //   Container(
+                  //     padding:
+                  //         context.rSymmetric(horizontal: 14, vertical: 4),
+                  //     decoration: BoxDecoration(
+                  //       color: Colors.white.withValues(alpha: 0.15),
+                  //       borderRadius:
+                  //           BorderRadius.circular(context.r(20)),
+                  //       border: Border.all(
+                  //         color: Colors.white.withValues(alpha: 0.25),
+                  //       ),
+                  //     ),
+                  //     child: Text(
+                  //       isSelf
+                  //           ? 'owner_profile_is_self'.tr(context)
+                  //           : roleLabel,
+                  //       style: GoogleFonts.tajawal(
+                  //         fontSize: context.sp(12),
+                  //         color: Colors.white,
+                  //         fontWeight: FontWeight.w600,
+                  //       ),
+                  //     ),
+                  //   ),
 
                   // City
                   if ((displayCity ?? '').isNotEmpty) ...[
@@ -176,8 +179,11 @@ class OwnerProfileSliverHeader extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.location_on_rounded,
-                            size: context.r(13), color: Colors.white54),
+                        Icon(
+                          Icons.location_on_rounded,
+                          size: context.r(13),
+                          color: Colors.white54,
+                        ),
                         SizedBox(width: context.r(4)),
                         Text(
                           displayCity!,
@@ -222,8 +228,9 @@ class OwnerProfileSliverHeader extends StatelessWidget {
                                 child: _ActionBtn(
                                   icon: Icons.forum_outlined,
                                   label: 'owner_profile_chat'.tr(context),
-                                  bg: AppColors.secondary
-                                      .withValues(alpha: 0.8),
+                                  bg: AppColors.secondary.withValues(
+                                    alpha: 0.8,
+                                  ),
                                   onTap: onChat!,
                                 ),
                               ),
@@ -233,8 +240,7 @@ class OwnerProfileSliverHeader extends StatelessWidget {
                               child: _ActionBtn(
                                 icon: Icons.forum_outlined,
                                 label: 'owner_profile_chat'.tr(context),
-                                bg: AppColors.secondary
-                                    .withValues(alpha: 0.8),
+                                bg: AppColors.secondary.withValues(alpha: 0.8),
                                 onTap: onChat!,
                               ),
                             ),
@@ -280,31 +286,31 @@ class _ActionBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: context.rSymmetric(horizontal: 12, vertical: 11),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(context.r(12)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: context.r(15), color: Colors.white),
-              SizedBox(width: context.r(6)),
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.cairo(
-                    fontSize: context.sp(12),
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
+    onTap: onTap,
+    child: Container(
+      padding: context.rSymmetric(horizontal: 12, vertical: 11),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(context.r(12)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: context.r(15), color: Colors.white),
+          SizedBox(width: context.r(6)),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.cairo(
+                fontSize: context.sp(12),
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
-            ],
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }

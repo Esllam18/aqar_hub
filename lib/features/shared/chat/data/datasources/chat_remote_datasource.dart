@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/chat_message_model.dart';
@@ -11,9 +10,12 @@ class ChatRemoteDatasource {
   static const _bucket = 'chat_media';
   static const int _pageSize = 30;
 
+  // ── Current user ────────────────────────────────────────────────────────────
 
+  /// Returns null when the user is not yet authenticated.
   String? get currentUserIdOrNull => _db.auth.currentUser?.id;
 
+  /// Throws if not authenticated. Only call after confirmed login.
   String get currentUserId {
     final uid = _db.auth.currentUser?.id;
     if (uid == null) throw Exception('Not authenticated');
@@ -32,7 +34,7 @@ class ChatRemoteDatasource {
     return result as String;
   }
 
-
+  /// Fetches all conversations with a single batch profile query (no N+1).
   Future<List<Map<String, dynamic>>> fetchConversations() async {
     final myId = currentUserId;
 
@@ -55,7 +57,7 @@ class ChatRemoteDatasource {
       otherIds.add(otherId);
     }
 
-    // ONE batch query for all profiles instead of N sequential calls
+    // ONE batch query for all profiles
     final profiles = <String, Map<String, dynamic>>{};
     if (otherIds.isNotEmpty) {
       final pRows = await _db
@@ -68,7 +70,6 @@ class ChatRemoteDatasource {
       }
     }
 
-    // Build result using the profile map — O(1) lookup per conversation
     final result = <Map<String, dynamic>>[];
     for (final conv in convList) {
       final otherId = conv['participant_a'] == myId
@@ -125,6 +126,11 @@ class ChatRemoteDatasource {
     return List<Map<String, dynamic>>.from(rows as List);
   }
 
+  /// Send a text message.
+  /// NOTE: The DB trigger fn_update_conversation_on_message automatically
+  /// updates last_message, unread counters, and timestamps. Do NOT manually
+  /// update those fields here — it would cause the unread counter to increment
+  /// multiple times (once per trigger + once per Flutter call = 3x bug).
   Future<ChatMessageModel> sendTextMessage({
     required String conversationId,
     required String text,
@@ -139,44 +145,11 @@ class ChatRemoteDatasource {
         })
         .select()
         .single();
-    final message = ChatMessageModel.fromMap(row);
-    await _touchConversation(
-      conversationId: conversationId,
-      lastMessage: text.trim(),
-    );
-    return message;
+    return ChatMessageModel.fromMap(row);
+    // DB trigger fires after this INSERT and handles everything else.
   }
 
-  Future<void> _touchConversation({
-    required String conversationId,
-    required String lastMessage,
-  }) async {
-    try {
-      final myId = currentUserId;
-      final conv = await _db
-          .from('conversations')
-          .select('participant_a, unread_a, unread_b')
-          .eq('id', conversationId)
-          .single();
-      final isA = conv['participant_a'] == myId;
-      final unreadKey = isA ? 'unread_b' : 'unread_a';
-      final currentUnread =
-          ((isA ? conv['unread_b'] : conv['unread_a']) as int?) ?? 0;
-
-      await _db.from('conversations').update({
-        'last_message': lastMessage.length > 100
-            ? '${lastMessage.substring(0, 100)}...'
-            : lastMessage,
-        'last_sender_id': myId,
-        'last_message_at': DateTime.now().toUtc().toIso8601String(),
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-        unreadKey: currentUnread + 1,
-      }).eq('id', conversationId);
-    } catch (e) {
-      debugPrint('[Chat] _touchConversation error: $e');
-    }
-  }
-
+  /// Upload a media file and send the message.
   Future<ChatMessageModel> sendMediaMessage({
     required String conversationId,
     required File file,
@@ -195,7 +168,9 @@ class ChatRemoteDatasource {
       _ => 'application/octet-stream',
     };
 
-    await _db.storage.from(_bucket).upload(
+    await _db.storage
+        .from(_bucket)
+        .upload(
           storagePath,
           file,
           fileOptions: FileOptions(contentType: contentType, upsert: true),
@@ -212,14 +187,8 @@ class ChatRemoteDatasource {
     };
 
     final row = await _db.from('messages').insert(payload).select().single();
-    final message = ChatMessageModel.fromMap(row);
-
-    final label = type == MessageType.image ? '📷 Photo' : '🎤 Voice message';
-    await _touchConversation(
-      conversationId: conversationId,
-      lastMessage: label,
-    );
-    return message;
+    return ChatMessageModel.fromMap(row);
+    // DB trigger fires after this INSERT and handles everything else.
   }
 
   Future<void> markMessagesAsRead(String conversationId) async {
@@ -266,9 +235,7 @@ class ChatRemoteDatasource {
           value: conversationId,
         ),
         callback: (payload) {
-          if (payload.newRecord['is_read'] == true) {
-            onReadUpdate();
-          }
+          if (payload.newRecord['is_read'] == true) onReadUpdate();
         },
       );
     }
@@ -292,21 +259,17 @@ class ChatRemoteDatasource {
     return channel;
   }
 
-  /// Listens to new message INSERTs — filtered to conversations where
-  /// the current user is a participant. Prevents listening to all DB traffic.
+  /// Filtered backup subscription — only fires for the user's own conversations.
   RealtimeChannel subscribeToAllMessages({
     required void Function(Map<String, dynamic>) onInsert,
     required List<String> conversationIds,
   }) {
     final myId = currentUserId;
     final channel = _db.channel('my_messages:$myId');
-
-    // Only subscribe if we have conversations to watch
     if (conversationIds.isEmpty) {
       channel.subscribe();
       return channel;
     }
-
     channel
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -344,9 +307,7 @@ class ChatRemoteDatasource {
     return channel;
   }
 
-  void unsubscribe(RealtimeChannel channel) {
-    _db.removeChannel(channel);
-  }
+  void unsubscribe(RealtimeChannel channel) => _db.removeChannel(channel);
 
   // ─────────────────────────────────────────────────────────────────────────
   // PRESENCE
@@ -364,11 +325,14 @@ class ChatRemoteDatasource {
     try {
       final uid = currentUserIdOrNull;
       if (uid == null) return;
-      await _db.from('presence').update({
-        'is_online': false,
-        'last_seen_at': DateTime.now().toIso8601String(),
-        'typing_in': null,
-      }).eq('user_id', uid);
+      await _db
+          .from('presence')
+          .update({
+            'is_online': false,
+            'last_seen_at': DateTime.now().toIso8601String(),
+            'typing_in': null,
+          })
+          .eq('user_id', uid);
     } catch (_) {}
   }
 

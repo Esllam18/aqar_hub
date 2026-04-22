@@ -4,6 +4,7 @@ import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:aqar_hub/features/owner/owner_profile/presentation/view/owner_profile_page.dart';
 import 'package:aqar_hub/features/shared/chat/data/models/conversation_model.dart';
+import 'package:aqar_hub/features/shared/notifications/fcm_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -140,6 +141,8 @@ class _State extends State<ChatConversationView> {
           conversationId: widget.conversationId,
           text: widget.initialPropertyCard!.toContentString(),
         );
+        // Send notification for the property card message
+        await _sendPush('🏠 ${widget.initialPropertyCard!.title}');
         if (mounted) {
           _messages = [..._messages, sent];
           _push();
@@ -156,6 +159,24 @@ class _State extends State<ChatConversationView> {
 
   void _push() {
     if (!_streamCtrl.isClosed) _streamCtrl.add(List.unmodifiable(_messages));
+  }
+
+  // ── Push notification helper ───────────────────────────────────────────────
+
+  Future<void> _sendPush(String body) async {
+    try {
+      await FcmService.instance.sendPushToUser(
+        recipientUid: widget.otherUserId,
+        title: widget.otherUserName.isNotEmpty
+            ? widget.otherUserName
+            : 'رسالة جديدة',
+        body: body.length > 100 ? '${body.substring(0, 100)}...' : body,
+        type: 'new_message',
+        data: {'conversation_id': widget.conversationId},
+      );
+    } catch (e) {
+      debugPrint('[Chat] _sendPush error: $e');
+    }
   }
 
   // ── Pagination ────────────────────────────────────────────────────────────
@@ -258,7 +279,7 @@ class _State extends State<ChatConversationView> {
         : _scrollCtrl.jumpTo(max);
   }
 
-  // ── Send ──────────────────────────────────────────────────────────────────
+  // ── Send text ─────────────────────────────────────────────────────────────
 
   Future<void> _sendText() async {
     final text = _textCtrl.text.trim();
@@ -271,6 +292,8 @@ class _State extends State<ChatConversationView> {
         conversationId: widget.conversationId,
         text: text,
       );
+      // Push notification to recipient — awaited so errors are logged
+      await _sendPush(text);
       if (mounted && !_messages.any((m) => m.id == sent.id)) {
         _messages = [..._messages, sent];
         _push();
@@ -283,6 +306,8 @@ class _State extends State<ChatConversationView> {
     }
   }
 
+  // ── Send property card ────────────────────────────────────────────────────
+
   Future<void> _sendPropertyCard() async {
     final card = _contextCard;
     if (card == null || _sending) return;
@@ -292,6 +317,7 @@ class _State extends State<ChatConversationView> {
         conversationId: widget.conversationId,
         text: card.toContentString(),
       );
+      await _sendPush('🏠 ${card.title}');
       if (mounted && !_messages.any((m) => m.id == sent.id)) {
         _messages = [..._messages, sent];
         _push();
@@ -303,6 +329,8 @@ class _State extends State<ChatConversationView> {
       if (mounted) setState(() => _sending = false);
     }
   }
+
+  // ── Pick & send images ────────────────────────────────────────────────────
 
   Future<void> _pickImage() async {
     final files = await _picker.pickMultiImage(imageQuality: 80);
@@ -336,6 +364,8 @@ class _State extends State<ChatConversationView> {
           _push();
         }
       }
+      // Single notification for all images sent together
+      await _sendPush('📷 صورة');
       if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _scrollToBottom(animated: true),
@@ -345,6 +375,8 @@ class _State extends State<ChatConversationView> {
       if (mounted) setState(() => _sending = false);
     }
   }
+
+  // ── Pick & send video ─────────────────────────────────────────────────────
 
   Future<void> _pickVideo() async {
     final f = await _picker.pickVideo(source: ImageSource.gallery);
@@ -373,6 +405,7 @@ class _State extends State<ChatConversationView> {
         file: File(f.path),
         type: MessageType.video,
       );
+      await _sendPush('🎥 فيديو');
       if (mounted) {
         setState(() {
           _messages = [..._messages.where((m) => m.id != tempId), sent];
@@ -401,7 +434,7 @@ class _State extends State<ChatConversationView> {
     }
   }
 
-  // ── Voice ─────────────────────────────────────────────────────────────────
+  // ── Voice recording & send ────────────────────────────────────────────────
 
   Future<void> _startRecording() async {
     if (!await _recorder.hasPermission()) return;
@@ -444,6 +477,7 @@ class _State extends State<ChatConversationView> {
         type: MessageType.voice,
         durationSecs: dur,
       );
+      await _sendPush('🎤 رسالة صوتية');
       if (mounted && !_messages.any((m) => m.id == sent.id)) {
         _messages = [..._messages, sent];
         _push();

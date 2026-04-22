@@ -1,8 +1,3 @@
-// lib/features/shared/chat/presentation/views/conversation_list_view.dart
-//
-// Redesigned — modern card tiles, frosted-glass header, swipe-to-delete,
-// online indicator dot, message-type icons. Zero logic changes.
-
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
@@ -199,14 +194,15 @@ class _ConversationTile extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final msgDay = DateTime(local.year, local.month, local.day);
-    if (msgDay == today) return DateFormat.jm().format(local);
+    final locale = Localizations.localeOf(context).languageCode;
+    if (msgDay == today) return DateFormat.jm(locale).format(local);
     if (today.difference(msgDay).inDays == 1) {
       return 'chat_yesterday'.tr(context);
     }
     if (today.difference(msgDay).inDays < 7) {
-      return DateFormat.E().format(local);
+      return DateFormat.E(locale).format(local);
     }
-    return DateFormat('d/M').format(local);
+    return DateFormat('d/M', locale).format(local);
   }
 
   @override

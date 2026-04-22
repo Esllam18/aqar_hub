@@ -106,7 +106,10 @@ class DateDivider extends StatelessWidget {
               borderRadius: BorderRadius.circular(context.r(12)),
             ),
             child: Text(
-              DateFormat('d MMM yyyy').format(date.toLocal()),
+              DateFormat(
+                'd MMM yyyy',
+                Localizations.localeOf(context).languageCode,
+              ).format(date.toLocal()),
               style: GoogleFonts.tajawal(
                 fontSize: context.sp(11),
                 color: Colors.grey.shade600,

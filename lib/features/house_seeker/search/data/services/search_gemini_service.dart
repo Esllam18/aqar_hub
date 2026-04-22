@@ -1,15 +1,6 @@
-// lib/features/house_seeker/search/data/services/search_gemini_service.dart
-//
-// Uses Groq API (OpenAI-compatible) with llama-3.3-70b-versatile.
-// Groq free tier: 14,400 requests/day, 30 requests/min.
-//
-// API key is injected at compile time via --dart-define-from-file=env.json
-// It is NOT bundled in the APK as a readable asset.
-
-// ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../../house_seeker/home/data/models/property_filter_model.dart';
@@ -42,9 +33,7 @@ class SearchGeminiService {
   SearchGeminiService._();
   static final SearchGeminiService instance = SearchGeminiService._();
 
-  // Compile-time constant — injected via --dart-define-from-file, never in APK
-  static const _apiKey = String.fromEnvironment('GROQ_API_KEY');
-
+  static final String _apiKey = dotenv.env['GROQ_API_KEY']!;
   static const _url = 'https://api.groq.com/openai/v1/chat/completions';
   static const _model = 'llama-3.3-70b-versatile';
 
@@ -218,8 +207,9 @@ User: "عايز أشتري سيارة"
     final minP = _d(j['price_min']);
     final rooms = _i(j['rooms']);
     final beds = _i(j['beds']);
-    final furnished =
-        j['is_furnished'] is bool ? j['is_furnished'] as bool : null;
+    final furnished = j['is_furnished'] is bool
+        ? j['is_furnished'] as bool
+        : null;
     final audience = _s(j['target_audience']);
 
     final filter = PropertyFilterModel(
@@ -248,19 +238,39 @@ User: "عايز أشتري سيارة"
   String _summaryAr(PropertyFilterModel f) {
     final p = <String>[];
     const pt = {
-      'apartment': 'شقة', 'villa': 'فيلا', 'studio': 'استوديو',
-      'duplex': 'دوبلكس', 'chalet': 'شاليه',
+      'apartment': 'شقة',
+      'villa': 'فيلا',
+      'studio': 'استوديو',
+      'duplex': 'دوبلكس',
+      'chalet': 'شاليه',
     };
     const gv = {
-      'cairo': 'القاهرة', 'giza': 'الجيزة', 'alexandria': 'الإسكندرية',
-      'qalyubia': 'القليوبية', 'dakahlia': 'الدقهلية', 'gharbia': 'الغربية',
-      'monufia': 'المنوفية', 'beheira': 'البحيرة', 'damietta': 'دمياط',
-      'sharkia': 'الشرقية', 'kafr_el_sheikh': 'كفر الشيخ',
-      'ismailia': 'الإسماعيلية', 'suez': 'السويس', 'port_said': 'بورسعيد',
-      'beni_suef': 'بني سويف', 'fayoum': 'الفيوم', 'minya': 'المنيا',
-      'asyut': 'أسيوط', 'sohag': 'سوهاج', 'qena': 'قنا', 'luxor': 'الأقصر',
-      'aswan': 'أسوان', 'red_sea': 'البحر الأحمر', 'south_sinai': 'جنوب سيناء',
-      'north_sinai': 'شمال سيناء', 'matrouh': 'مطروح',
+      'cairo': 'القاهرة',
+      'giza': 'الجيزة',
+      'alexandria': 'الإسكندرية',
+      'qalyubia': 'القليوبية',
+      'dakahlia': 'الدقهلية',
+      'gharbia': 'الغربية',
+      'monufia': 'المنوفية',
+      'beheira': 'البحيرة',
+      'damietta': 'دمياط',
+      'sharkia': 'الشرقية',
+      'kafr_el_sheikh': 'كفر الشيخ',
+      'ismailia': 'الإسماعيلية',
+      'suez': 'السويس',
+      'port_said': 'بورسعيد',
+      'beni_suef': 'بني سويف',
+      'fayoum': 'الفيوم',
+      'minya': 'المنيا',
+      'asyut': 'أسيوط',
+      'sohag': 'سوهاج',
+      'qena': 'قنا',
+      'luxor': 'الأقصر',
+      'aswan': 'أسوان',
+      'red_sea': 'البحر الأحمر',
+      'south_sinai': 'جنوب سيناء',
+      'north_sinai': 'شمال سيناء',
+      'matrouh': 'مطروح',
       'new_valley': 'الوادي الجديد',
     };
     if (f.propertyType != null) p.add(pt[f.propertyType] ?? f.propertyType!);

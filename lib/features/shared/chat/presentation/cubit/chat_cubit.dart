@@ -1,5 +1,3 @@
-// lib/features/shared/chat/presentation/cubit/chat_cubit.dart
-
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -26,9 +24,9 @@ final class ChatLoading extends ChatState {
 
 final class ChatLoaded extends ChatState {
   final List<ChatMessageModel> messages;
-  final bool hasMore; // can load older pages
-  final bool loadingMore; // loading older page
-  final bool sending; // uploading / sending a message
+  final bool hasMore;
+  final bool loadingMore;
+  final bool sending;
   final PresenceModel? otherPresence;
 
   const ChatLoaded({
@@ -67,6 +65,9 @@ class ChatCubit extends Cubit<ChatState> {
   final String conversationId;
   final String otherUserId;
 
+  // The other user's display name — used in push notification title
+  final String otherUserName;
+
   RealtimeChannel? _msgChannel;
   RealtimeChannel? _presenceChannel;
   Timer? _typingTimer;
@@ -76,12 +77,13 @@ class ChatCubit extends Cubit<ChatState> {
     required ChatRepositoryImpl repo,
     required this.conversationId,
     required this.otherUserId,
+    this.otherUserName = '',
   }) : _repo = repo,
        super(const ChatInitial());
 
   String get myId => _repo.currentUserId;
 
-  // ── Initial load ────────────────────────────────────────────────────────────
+  // ── Initial load ─────────────────────────────────────────────────────────
 
   Future<void> load() async {
     emit(const ChatLoading());
@@ -108,14 +110,13 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // ── Load older messages (pagination) ───────────────────────────────────────
+  // ── Load older messages ───────────────────────────────────────────────────
 
   Future<void> loadMore() async {
     final current = state;
     if (current is! ChatLoaded || current.loadingMore || !current.hasMore) {
       return;
     }
-
     emit(current.copyWith(loadingMore: true));
     try {
       final oldest = current.messages.first.createdAt;
@@ -137,17 +138,17 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // ── Send text ───────────────────────────────────────────────────────────────
+  // ── Send text ─────────────────────────────────────────────────────────────
 
   Future<void> sendText(String text) async {
     if (text.trim().isEmpty) return;
     _stopTyping();
     try {
       await _repo.sendText(conversationId: conversationId, text: text);
-      // Message arrives via realtime subscription — also push to recipient
-      FcmService.instance.sendPushToUser(
+      // Await the push so errors are visible in debug logs
+      await FcmService.instance.sendPushToUser(
         recipientUid: otherUserId,
-        title: 'رسالة جديدة',
+        title: otherUserName.isNotEmpty ? otherUserName : 'رسالة جديدة',
         body: text.length > 80 ? '${text.substring(0, 80)}...' : text,
         type: 'new_message',
         data: {'conversation_id': conversationId},
@@ -157,7 +158,7 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // ── Send media ──────────────────────────────────────────────────────────────
+  // ── Send media ────────────────────────────────────────────────────────────
 
   Future<void> sendMedia({
     required File file,
@@ -175,11 +176,10 @@ class ChatCubit extends Cubit<ChatState> {
         type: type,
         durationSecs: durationSecs,
       );
-      // Push to recipient for media messages too
       final label = type == MessageType.image ? '📷 صورة' : '🎤 رسالة صوتية';
-      FcmService.instance.sendPushToUser(
+      await FcmService.instance.sendPushToUser(
         recipientUid: otherUserId,
-        title: 'رسالة جديدة',
+        title: otherUserName.isNotEmpty ? otherUserName : 'رسالة جديدة',
         body: label,
         type: 'new_message',
         data: {'conversation_id': conversationId},
@@ -193,7 +193,7 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
-  // ── Typing indicator ────────────────────────────────────────────────────────
+  // ── Typing indicator ──────────────────────────────────────────────────────
 
   void onTyping() {
     _typingTimer?.cancel();
@@ -206,7 +206,7 @@ class ChatCubit extends Cubit<ChatState> {
     _repo.setTyping(conversationId: conversationId, isTyping: false);
   }
 
-  // ── Realtime ────────────────────────────────────────────────────────────────
+  // ── Realtime ──────────────────────────────────────────────────────────────
 
   void _subscribeMessages() {
     _msgChannel = _repo.subscribeMessages(
@@ -215,12 +215,10 @@ class ChatCubit extends Cubit<ChatState> {
         if (isClosed) return;
         final current = state;
         if (current is ChatLoaded) {
-          // Avoid duplicates
           final exists = current.messages.any((m) => m.id == msg.id);
           if (!exists) {
             emit(current.copyWith(messages: [...current.messages, msg]));
           }
-          // Mark as read if message is from other user
           if (msg.senderId != myId) {
             _repo.markAsRead(conversationId);
           }
@@ -230,7 +228,6 @@ class ChatCubit extends Cubit<ChatState> {
         if (isClosed) return;
         final current = state;
         if (current is ChatLoaded) {
-          // Mark all our sent messages as read in local state
           final updated = current.messages
               .map(
                 (m) => m.senderId == myId && !m.isRead
