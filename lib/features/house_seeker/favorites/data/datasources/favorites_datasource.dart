@@ -22,10 +22,19 @@ class FavoritesDatasourceImpl implements FavoritesDatasource {
 
   @override
   Future<void> addFavorite(String userId, String propertyId) async {
-    await _supabase.from('favorites').upsert({
-      'user_id': userId,
-      'property_id': propertyId,
-    });
+    final existing = await _supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('property_id', propertyId)
+        .maybeSingle();
+
+    if (existing == null) {
+      await _supabase.from('favorites').insert({
+        'user_id': userId,
+        'property_id': propertyId,
+      });
+    }
   }
 
   @override

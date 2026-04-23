@@ -144,13 +144,24 @@ class FcmService {
     try {
       final uid = Supabase.instance.client.auth.currentUser?.id;
       if (uid == null) return;
-      await Supabase.instance.client.from('device_tokens').upsert({
+      final platform = Platform.isIOS ? 'ios' : 'android';
+
+      // Delete the old token(s) for this user+platform first, then insert the
+      // new one. This avoids stale tokens accumulating (e.g. after reinstall)
+      // and works even though device_tokens has no unique index.
+      await Supabase.instance.client
+          .from('device_tokens')
+          .delete()
+          .eq('user_id', uid)
+          .eq('platform', platform);
+
+      await Supabase.instance.client.from('device_tokens').insert({
         'user_id': uid,
         'token': token,
-        'platform': Platform.isIOS ? 'ios' : 'android',
+        'platform': platform,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'user_id,token');
-      debugPrint('[FCM] token upserted for $uid');
+      });
+      debugPrint('[FCM] token saved for $uid on $platform');
     } catch (e) {
       debugPrint('[FCM] _upsertToken error: $e');
     }

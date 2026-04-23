@@ -1,5 +1,3 @@
-// lib/features/auth/presentation/cubit/auth_cubit.dart
-
 import 'package:aqar_hub/core/helpers/app_prefs.dart';
 import 'package:aqar_hub/features/auth/data/models/user_model.dart';
 import 'package:aqar_hub/features/auth/domain/repositories/auth_repository.dart';
@@ -150,6 +148,13 @@ class AuthCubit extends Cubit<AuthState> {
   // ── Sign Out ───────────────────────────────────────────────────────────────
 
   Future<void> signOut() async {
+    // Remove FCM token from DB first — prevents push notifications
+    // from being delivered after logout.
+    try {
+      await FcmService.instance.removeToken();
+    } catch (_) {
+      // Non-fatal — token cleanup is best-effort
+    }
     try {
       await _repo.signOut();
     } catch (_) {

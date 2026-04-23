@@ -28,6 +28,9 @@ class NotificationPayload {
   /// True when tapping should navigate to the chat screen.
   bool get isChat => type == 'new_message';
 
-  /// True when tapping should navigate to the home/property screen.
+  /// True when tapping should navigate to a property details screen.
   bool get isProperty => type == 'new_property';
+
+  /// True when tapping should navigate to the property that has the comment.
+  bool get isComment => type == 'new_comment';
 }

@@ -1,7 +1,3 @@
-// lib/features/shared/notifications/notification_center/notification_log_model.dart
-//
-// Maps the notification_log Supabase table to a Dart model.
-
 class NotificationLogModel {
   final String id;
   final String recipientId;
@@ -39,9 +35,10 @@ class NotificationLogModel {
     );
   }
 
-  // Convenience helpers for UI
+  // Convenience helpers for UI & navigation
   bool get isChat => type == 'new_message';
   bool get isProperty => type == 'new_property';
+  bool get isComment => type == 'new_comment';
 
   String get conversationId => data?['conversation_id'] as String? ?? '';
   String get propertyId => data?['property_id'] as String? ?? '';

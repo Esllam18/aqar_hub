@@ -1,5 +1,3 @@
-// lib/features/house_seeker/search/data/datasources/search_datasource.dart
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../house_seeker/home/data/models/property_filter_model.dart';
@@ -31,6 +29,16 @@ class SearchDatasourceImpl implements SearchDatasource {
     required int limit,
   }) async {
     dynamic q = _db.from('properties').select(_select);
+
+    // ── CRITICAL: Only show available (not already rented) properties ──────
+    if (filter.listingType == 'rent') {
+      q = q.eq('is_rented', false);
+    } else if (filter.listingType == null) {
+      q = q.or(
+        'listing_type.eq.sale,and(listing_type.eq.rent,is_rented.eq.false)',
+      );
+    }
+    // For sale: is_rented is not meaningful, no filter needed.
 
     if (filter.listingType != null) {
       q = q.eq('listing_type', filter.listingType!);

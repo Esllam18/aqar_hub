@@ -40,6 +40,22 @@ class PropertyDatasourceImpl implements PropertyDatasource {
 
     dynamic query = supabase.from('properties').select(select);
 
+    // ── CRITICAL: Only show available (not already rented) properties ──────
+    // For rent listings, hide units that are fully rented out.
+    // Sale properties do not use is_rented, so we only apply this to rent.
+    if (filter.listingType == 'rent' || filter.listingType == null) {
+      // When listing_type is null (showing all), apply a compound filter:
+      // show sale properties always, show rent properties only if not rented.
+      if (filter.listingType == null) {
+        query = query.or(
+          'listing_type.eq.sale,and(listing_type.eq.rent,is_rented.eq.false)',
+        );
+      } else {
+        // Explicitly filtering rent — hide rented ones
+        query = query.eq('is_rented', false);
+      }
+    }
+
     if (filter.listingType != null) {
       query = query.eq('listing_type', filter.listingType!);
     }

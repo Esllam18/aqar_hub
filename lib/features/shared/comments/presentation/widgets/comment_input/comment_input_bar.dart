@@ -1,8 +1,3 @@
-// lib/features/shared/comments/presentation/widgets/comment_input/comment_input_bar.dart
-//
-// Text field + send button for composing a comment.
-// Handles character counter, disabled state while submitting.
-
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
@@ -58,8 +53,7 @@ class _CommentInputBarState extends State<CommentInputBar> {
 
     return BlocBuilder<CommentsCubit, CommentsState>(
       builder: (context, state) {
-        final isSubmitting =
-            state is CommentsLoaded && state.submitting;
+        final isSubmitting = state is CommentsLoaded && state.submitting;
 
         return Container(
           padding: context.rOnly(left: 16, right: 16, top: 12, bottom: 12),
@@ -174,9 +168,7 @@ class _GuestInputHint extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.04),
         borderRadius: BorderRadius.circular(context.r(14)),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.12),
-        ),
+        border: Border.all(color: AppColors.primary.withOpacity(0.12)),
       ),
       child: Row(
         children: [

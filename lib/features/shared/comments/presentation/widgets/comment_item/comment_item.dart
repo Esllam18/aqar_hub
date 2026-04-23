@@ -202,48 +202,131 @@ class _DeleteButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => _confirmDelete(context),
-      child: Icon(
-        Icons.delete_outline_rounded,
-        size: context.r(16),
-        color: AppColors.error.withOpacity(0.70),
+      child: Padding(
+        padding: context.rOnly(left: 8),
+        child: Icon(
+          Icons.delete_outline_rounded,
+          size: context.r(20), // was r(16)
+          color: AppColors.error.withOpacity(0.75),
+        ),
       ),
     );
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
     final cubit = context.read<CommentsCubit>();
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'comment_delete_title'.tr(context),
-          style: GoogleFonts.cairo(fontWeight: FontWeight.w800),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _DeleteConfirmSheet(),
+    );
+    if (confirmed == true) cubit.deleteComment(commentId);
+  }
+}
+
+class _DeleteConfirmSheet extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(context.r(24)),
         ),
-        content: Text(
-          'comment_delete_body'.tr(context),
-          style: GoogleFonts.tajawal(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'cancel'.tr(context),
-              style: GoogleFonts.cairo(color: AppColors.textSecondary),
+      ),
+      padding: context.rOnly(left: 24, right: 24, top: 20, bottom: 36),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            width: context.r(40),
+            height: context.r(4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'delete'.tr(context),
-              style: GoogleFonts.cairo(color: AppColors.error),
+          SizedBox(height: context.r(20)),
+          Container(
+            width: context.r(56),
+            height: context.r(56),
+            decoration: BoxDecoration(
+              color: AppColors.error.withOpacity(0.10),
+              shape: BoxShape.circle,
             ),
+            child: Icon(
+              Icons.delete_outline_rounded,
+              color: AppColors.error,
+              size: context.r(28),
+            ),
+          ),
+          SizedBox(height: context.r(16)),
+          Text(
+            'comment_delete_title'.tr(context),
+            style: GoogleFonts.cairo(
+              fontSize: context.sp(17),
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1B2D5E),
+            ),
+          ),
+          SizedBox(height: context.r(8)),
+          Text(
+            'comment_delete_body'.tr(context),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.tajawal(
+              fontSize: context.sp(13),
+              color: AppColors.textSecondary,
+            ),
+          ),
+          SizedBox(height: context.r(28)),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    padding: context.rSymmetric(vertical: 14),
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(context.r(14)),
+                    ),
+                  ),
+                  child: Text(
+                    'cancel'.tr(context),
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: context.r(12)),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    padding: context.rSymmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(context.r(14)),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'delete'.tr(context),
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
-    if (confirmed == true) {
-      cubit.deleteComment(commentId);
-    }
   }
 }
