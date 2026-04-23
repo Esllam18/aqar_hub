@@ -764,5 +764,22 @@
   "val_passwords_mismatch": "كلمتا المرور غير متطابقتين",
   "val_phone_invalid": "أدخل رقم هاتف مصري صحيح",
   "val_phone_required": "رقم الهاتف مطلوب",
-  "val_required": "مطلوب"
+  "val_required": "مطلوب",
+    "comment_section_title": "التعليقات",
+  "comment_hint": "اكتب تعليقاً...",
+  "comment_just_now": "الآن",
+  "comment_minutes_ago": "منذ {n} د",
+  "comment_hours_ago": "منذ {n} س",
+  "comment_days_ago": "منذ {n} أيام",
+  "comment_load_more": "تحميل المزيد من التعليقات",
+  "comment_empty_title": "لا توجد تعليقات بعد",
+  "comment_empty_body": "كن أول من يشارك رأيه في هذا العقار.",
+  "comment_error_loading": "تعذّر تحميل التعليقات",
+  "comment_submit_error": "فشل نشر التعليق. حاول مرة أخرى.",
+  "comment_delete_title": "حذف التعليق؟",
+  "comment_delete_body": "سيتم حذف هذا التعليق نهائياً.",
+  "comment_login_required": "سجّل دخولك لترك تعليق.",
+  "comment_unknown_author": "مجهول",
+  "cancel": "إلغاء",
+  "delete": "حذف"
 }

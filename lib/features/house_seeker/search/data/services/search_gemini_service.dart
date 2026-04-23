@@ -1,3 +1,5 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -276,11 +278,12 @@ User: "عايز أشتري سيارة"
     if (f.propertyType != null) p.add(pt[f.propertyType] ?? f.propertyType!);
     if (f.listingType == 'rent') p.add('للإيجار');
     if (f.listingType == 'sale') p.add('للبيع');
-    if (f.governorateSlug != null)
+    if (f.governorateSlug != null) {
       p.add('في ${gv[f.governorateSlug] ?? f.governorateSlug!}');
-    if (f.maxPrice != null)
+    }
+    if (f.maxPrice != null) {
       p.add('حتى ${_fmt(f.maxPrice!)} ج');
-    else if (f.minPrice != null)
+    } else if (f.minPrice != null)
       p.add('من ${_fmt(f.minPrice!)} ج');
     if (f.minRooms != null) p.add('${f.minRooms}+ غرف');
     if (f.minBeds != null) p.add('${f.minBeds}+ أسرة');
@@ -296,11 +299,12 @@ User: "عايز أشتري سيارة"
     if (f.propertyType != null) p.add(_cap(f.propertyType!));
     if (f.listingType == 'rent') p.add('for Rent');
     if (f.listingType == 'sale') p.add('for Sale');
-    if (f.governorateSlug != null)
+    if (f.governorateSlug != null) {
       p.add('in ${_cap(f.governorateSlug!.replaceAll('_', ' '))}');
-    if (f.maxPrice != null)
+    }
+    if (f.maxPrice != null) {
       p.add('up to ${_fmt(f.maxPrice!)} EGP');
-    else if (f.minPrice != null)
+    } else if (f.minPrice != null)
       p.add('from ${_fmt(f.minPrice!)} EGP');
     if (f.minRooms != null) p.add('${f.minRooms}+ rooms');
     if (f.isFurnished == true) p.add('Furnished');

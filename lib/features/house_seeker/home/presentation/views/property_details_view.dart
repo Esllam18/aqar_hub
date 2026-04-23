@@ -10,6 +10,8 @@ import 'package:aqar_hub/features/house_seeker/home/presentation/views/property_
 import 'package:aqar_hub/features/house_seeker/home/presentation/views/property_details/details_video_player.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/details_owner_card.dart';
 import 'package:aqar_hub/features/shared/chat/chat_navigator.dart';
+// ── NEW ──────────────────────────────────────────────────────────────────────
+import 'package:aqar_hub/features/shared/comments/presentation/view/comments_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -45,7 +47,7 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
       widget.property.ownerId.isEmpty ||
       _supabase.auth.currentUser?.id == widget.property.ownerId;
 
-  // ── FIX #5: Increment viewed_count when a non-owner opens this screen ──────
+  // ── FIX: Increment viewed_count when a non-owner opens this screen ─────────
   @override
   void initState() {
     super.initState();
@@ -54,7 +56,6 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
     }
   }
 
-  // Calls the atomic Supabase RPC function. Fire-and-forget — never blocks UI.
   Future<void> _incrementViewedCount() async {
     try {
       final ownerId = widget.property.ownerId;
@@ -64,12 +65,10 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
         params: {'owner_id_input': ownerId},
       );
     } catch (e) {
-      // Non-fatal — counter drift is acceptable. Log only in debug.
       debugPrint('[PropertyDetails] increment_viewed_count error: $e');
     }
   }
 
-  // ── FIX #6: Increment contacted_count before opening WhatsApp or chat ──────
   Future<void> _incrementContactedCount() async {
     try {
       final ownerId = widget.property.ownerId;
@@ -85,9 +84,7 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
 
   Future<void> _openWhatsApp(String? phone) async {
     if (phone == null || phone.trim().isEmpty) return;
-    // Record contact before launching external app
     await _incrementContactedCount();
-
     final clean = phone.replaceAll(RegExp(r'\D'), '');
     final number = clean.startsWith('0')
         ? '2$clean'
@@ -117,7 +114,6 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
   }
 
   void _openChat(BuildContext ctx) {
-    // Record contact before opening chat
     _incrementContactedCount();
     ChatNavigator.openChat(
       ctx,
@@ -258,6 +254,19 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
                             ),
                           ),
                         ],
+
+                        // ── NEW: Comments Section ─────────────────────────
+                        SizedBox(height: context.r(24)),
+                        AppAnimations.fade(
+                          duration: const Duration(milliseconds: 350),
+                          delay: const Duration(milliseconds: 220),
+                          child: CommentsSection(
+                            propertyId: p.id,
+                            propertyOwnerId: p.ownerId,
+                          ),
+                        ),
+
+                        // ─────────────────────────────────────────────────
                         SizedBox(height: context.r(100)),
                       ],
                     ),

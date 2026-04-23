@@ -764,5 +764,22 @@
   "val_passwords_mismatch": "Passwords do not match",
   "val_phone_invalid": "Enter a valid Egyptian phone number",
   "val_phone_required": "Phone number is required",
-  "val_required": "Required"
+  "val_required": "Required",
+    "comment_section_title": "Comments",
+  "comment_hint": "Write a comment...",
+  "comment_just_now": "Just now",
+  "comment_minutes_ago": "{n}m ago",
+  "comment_hours_ago": "{n}h ago",
+  "comment_days_ago": "{n}d ago",
+  "comment_load_more": "Load more comments",
+  "comment_empty_title": "No comments yet",
+  "comment_empty_body": "Be the first to share your thoughts on this property.",
+  "comment_error_loading": "Could not load comments",
+  "comment_submit_error": "Failed to post comment. Please try again.",
+  "comment_delete_title": "Delete comment?",
+  "comment_delete_body": "This comment will be permanently removed.",
+  "comment_login_required": "Sign in to leave a comment.",
+  "comment_unknown_author": "Anonymous",
+  "cancel": "Cancel",
+  "delete": "Delete"
 }
