@@ -19,6 +19,7 @@
   "addprop_address": "Street Address",
   "addprop_address_hint": "Full address",
   "addprop_address_placeholder": "e.g. 5 Al-Nasr Street, Building 3",
+  "addprop_ai_recommended": "AI price check is recommended before publishing.",
   "addprop_ai_required": "Please complete the AI price check before publishing.",
   "addprop_amenities_hint": "Choose the features available in or near this property (optional).",
   "addprop_amenities_selected": "selected",

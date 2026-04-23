@@ -1,4 +1,12 @@
+// lib/features/owner/analytics/presentation/view/owner_analytics_view.dart
+//
+// Full Owner Analytics / Statistics screen.
+// Data is fetched directly from Supabase properties + rental_options.
+// No external chart library required — all charts are drawn with CustomPaint.
+
 // ignore_for_file: deprecated_member_use
+
+import 'dart:ui' as ui;
 
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
@@ -930,6 +938,7 @@ class _DonutPainter extends CustomPainter {
           fontWeight: FontWeight.w900,
         ),
       ),
+      textDirection: ui.TextDirection.ltr,
     );
     textPainter.layout();
     textPainter.paint(

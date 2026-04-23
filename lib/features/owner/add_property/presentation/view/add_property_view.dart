@@ -1,7 +1,3 @@
-// lib/features/owner/home/presentation/views/add_property_view.dart
-// 8-step guided wizard — each step lives in its own file under add_property/
-// This file is the orchestrator only: navigation, progress bar, bottom bar.
-
 // ignore_for_file: deprecated_member_use, curly_braces_in_flow_control_structures
 
 import 'package:aqar_hub/core/constants/app_colors.dart';
@@ -186,100 +182,112 @@ class _ContentState extends State<_Content> {
     ),
   );
 
-  Widget _bottomBar(BuildContext context) =>
-      BlocBuilder<AddPropertyCubit, AddPropertyState>(
-        builder: (ctx, s) {
-          final loading = s is AddPropertyLoading;
-          final isLast = _step == _total - 1;
-          final aiPending = isLast && _form.aiPriceResult == null;
-          return Container(
-            padding: context.rOnly(
-              left: 16,
-              right: 16,
-              top: 12,
-              bottom: 12 + MediaQuery.paddingOf(context).bottom,
+  Widget _bottomBar(
+    BuildContext context,
+  ) => BlocBuilder<AddPropertyCubit, AddPropertyState>(
+    builder: (ctx, s) {
+      final loading = s is AddPropertyLoading;
+      final isLast = _step == _total - 1;
+      // AI check is strongly recommended but no longer blocks publishing.
+      // If the owner skips it, the property is published without AI pricing.
+      final aiPending = isLast && _form.aiPriceResult == null;
+
+      return Container(
+        padding: context.rOnly(
+          left: 16,
+          right: 16,
+          top: 12,
+          bottom: 12 + MediaQuery.paddingOf(context).bottom,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: context.r(16),
+              offset: Offset(0, context.r(-4)),
             ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: context.r(16),
-                  offset: Offset(0, context.r(-4)),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── AI pending hint (soft warning, not a blocker) ──────
+            if (aiPending)
+              Padding(
+                padding: context.rOnly(bottom: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: context.r(15),
+                      color: Colors.orange.shade600,
+                    ),
+                    SizedBox(width: context.r(6)),
+                    Expanded(
+                      child: Text(
+                        'addprop_ai_recommended'.tr(context),
+                        style: GoogleFonts.cairo(
+                          fontSize: context.sp(11),
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // ── Navigation row (always visible) ──────────────────
+            Row(
+              children: [
+                Text(
+                  '${_step + 1} / $_total',
+                  style: GoogleFonts.cairo(
+                    fontSize: context.sp(13),
+                    color: Colors.grey.shade400,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(width: context.r(12)),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: loading ? null : _next,
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: AppColors.primary,
+                      padding: context.rSymmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(context.r(14)),
+                      ),
+                    ),
+                    child: loading
+                        ? SizedBox(
+                            width: context.r(20),
+                            height: context.r(20),
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            isLast
+                                ? 'addprop_publish'.tr(context)
+                                : 'addprop_next'.tr(context),
+                            style: GoogleFonts.cairo(
+                              fontSize: context.sp(14),
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                  ),
                 ),
               ],
             ),
-            child: aiPending
-                ? Row(
-                    children: [
-                      Icon(
-                        Icons.lock_clock_outlined,
-                        size: context.r(18),
-                        color: Colors.orange.shade600,
-                      ),
-                      SizedBox(width: context.r(8)),
-                      Expanded(
-                        child: Text(
-                          'addprop_ai_required'.tr(context),
-                          style: GoogleFonts.cairo(
-                            fontSize: context.sp(12),
-                            color: Colors.orange.shade700,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Text(
-                        '${_step + 1} / $_total',
-                        style: GoogleFonts.cairo(
-                          fontSize: context.sp(13),
-                          color: Colors.grey.shade400,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(width: context.r(12)),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: loading ? null : _next,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: AppColors.primary,
-                            padding: context.rSymmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                context.r(14),
-                              ),
-                            ),
-                          ),
-                          child: loading
-                              ? SizedBox(
-                                  width: context.r(20),
-                                  height: context.r(20),
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(
-                                  isLast
-                                      ? 'addprop_publish'.tr(context)
-                                      : 'addprop_next'.tr(context),
-                                  style: GoogleFonts.cairo(
-                                    fontSize: context.sp(14),
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-          );
-        },
+          ],
+        ),
       );
+    },
+  );
 }
 
 class _ProgressBar extends StatelessWidget {

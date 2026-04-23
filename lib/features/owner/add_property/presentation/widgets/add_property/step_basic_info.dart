@@ -1,5 +1,3 @@
-// lib/.../add_property/step_basic_info.dart  — Step 0: Title + Location
-
 // ignore_for_file: deprecated_member_use
 
 import 'package:aqar_hub/core/constants/app_colors.dart';
@@ -177,9 +175,18 @@ class _State extends State<StepBasicInfo> {
               keyboardType: TextInputType.url,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return null;
-                if (!v.contains('maps.google') &&
-                    !v.contains('goo.gl') &&
-                    !v.contains('maps.app')) {
+                // Accept only proper Google Maps domains, not any URL that
+                // happens to contain the word "map" anywhere.
+                final uri = Uri.tryParse(v.trim());
+                final host = uri?.host.toLowerCase() ?? '';
+                final path = uri?.path.toLowerCase() ?? '';
+                final isValidGoogleMapsUrl =
+                    host == 'maps.google.com' ||
+                    host == 'maps.google.com.eg' ||
+                    host == 'www.google.com' && path.startsWith('/maps') ||
+                    host == 'goo.gl' ||
+                    host == 'maps.app.goo.gl';
+                if (!isValidGoogleMapsUrl) {
                   return 'addprop_location_link_invalid'.tr(context);
                 }
                 return null;
