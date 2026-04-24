@@ -134,14 +134,19 @@ class _State extends State<ChatConversationView> {
         _push();
       });
       unawaited(_repo.goOnline());
-      _subscribeMessages();
       _subscribePresence();
+
+      // FIX: Send the initial property card BEFORE subscribing to realtime messages.
+      // Previously, the subscription was live while the send + push awaited, so the
+      // realtime INSERT event arrived and added the message, then the code below also
+      // added it — creating a duplicate. By starting the subscription AFTER we have
+      // manually added the sent message, the dedup check always catches any late
+      // realtime echo.
       if (_messages.isEmpty && widget.initialPropertyCard != null) {
         final sent = await _repo.sendText(
           conversationId: widget.conversationId,
           text: widget.initialPropertyCard!.toContentString(),
         );
-        // Send notification for the property card message
         await _sendPush('🏠 ${widget.initialPropertyCard!.title}');
         if (mounted) {
           _messages = [..._messages, sent];
@@ -151,6 +156,10 @@ class _State extends State<ChatConversationView> {
           );
         }
       }
+
+      // Subscribe only now — _messages already contains the initial card (if any),
+      // so the dedup guard in onMessage will prevent any duplicate.
+      _subscribeMessages();
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
     } catch (_) {
       if (mounted) setState(() => _initialLoad = false);

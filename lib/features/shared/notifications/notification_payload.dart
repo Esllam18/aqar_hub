@@ -1,8 +1,3 @@
-// lib/features/shared/notifications/notification_payload.dart
-//
-// Strongly-typed model for FCM notification data payloads.
-// Keeps navigation logic out of FcmService.
-
 class NotificationPayload {
   final String type;
   final String? conversationId;

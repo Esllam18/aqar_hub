@@ -108,10 +108,8 @@ class _OwnerCommentsSectionState extends State<OwnerCommentsSection> {
       }
 
       // 3. Batch-fetch commenter profiles (one query, no N+1)
-      final userIds = comments
-          .map((c) => c['user_id'].toString())
-          .toSet()
-          .toList();
+      final userIds =
+          comments.map((c) => c['user_id'].toString()).toSet().toList();
       final profileRows = await _supabase
           .from('profiles')
           .select('id, first_name, last_name, profile_image_url')
@@ -148,11 +146,7 @@ class _OwnerCommentsSectionState extends State<OwnerCommentsSection> {
         );
       }).toList();
 
-      if (mounted)
-        setState(() {
-          _rows = rows;
-          _loading = false;
-        });
+      if (mounted) setState(() { _rows = rows; _loading = false; });
     } catch (e) {
       debugPrint('[OwnerCommentsSection] load error: $e');
       if (mounted) setState(() => _loading = false);
@@ -217,7 +211,8 @@ class _OwnerCommentsSectionState extends State<OwnerCommentsSection> {
                   ),
                 ),
                 Container(
-                  padding: context.rSymmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      context.rSymmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.info.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(context.r(8)),
@@ -279,11 +274,11 @@ class _OwnerCommentsSectionState extends State<OwnerCommentsSection> {
                       _expanded
                           ? 'owner_comments_show_less'.tr(context)
                           : 'owner_comments_show_more'
-                                .tr(context)
-                                .replaceAll(
-                                  '{n}',
-                                  '${_rows.length - _previewCount}',
-                                ),
+                              .tr(context)
+                              .replaceAll(
+                                '{n}',
+                                '${_rows.length - _previewCount}',
+                              ),
                       style: GoogleFonts.cairo(
                         fontSize: context.sp(12),
                         fontWeight: FontWeight.w700,
@@ -333,7 +328,9 @@ class _CommentRowTile extends StatelessWidget {
           .replaceAll('{n}', '${diff.inHours}');
     }
     if (diff.inDays < 7) {
-      return 'comment_days_ago'.tr(context).replaceAll('{n}', '${diff.inDays}');
+      return 'comment_days_ago'
+          .tr(context)
+          .replaceAll('{n}', '${diff.inDays}');
     }
     return DateFormat('d MMM yyyy', locale).format(row.createdAt.toLocal());
   }
@@ -463,15 +460,15 @@ class _Initials extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Text(
-      initials,
-      style: GoogleFonts.cairo(
-        fontSize: context.sp(13),
-        fontWeight: FontWeight.w800,
-        color: AppColors.primary,
-      ),
-    ),
-  );
+        child: Text(
+          initials,
+          style: GoogleFonts.cairo(
+            fontSize: context.sp(13),
+            fontWeight: FontWeight.w800,
+            color: AppColors.primary,
+          ),
+        ),
+      );
 }
 
 // ── Loading skeleton ──────────────────────────────────────────────────────────

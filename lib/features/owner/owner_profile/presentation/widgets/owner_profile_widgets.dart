@@ -93,33 +93,33 @@ class _StatCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: context.rSymmetric(horizontal: 6, vertical: 14),
-    child: Column(
-      children: [
-        Icon(icon, size: context.r(18), color: iconColor),
-        SizedBox(height: context.r(4)),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.cairo(
-            fontSize: context.sp(13),
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF1B2D5E),
-          ),
+        padding: context.rSymmetric(horizontal: 6, vertical: 14),
+        child: Column(
+          children: [
+            Icon(icon, size: context.r(18), color: iconColor),
+            SizedBox(height: context.r(4)),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cairo(
+                fontSize: context.sp(13),
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1B2D5E),
+              ),
+            ),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.tajawal(
+                fontSize: context.sp(10),
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
         ),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.tajawal(
-            fontSize: context.sp(10),
-            color: Colors.grey.shade500,
-          ),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 // ── Info card (email + address) ───────────────────────────────────────────────
@@ -195,32 +195,22 @@ class _InfoRow extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.07),
                   borderRadius: BorderRadius.circular(context.r(10)),
                 ),
-                child: Icon(
-                  icon,
-                  color: AppColors.primary,
-                  size: context.r(18),
-                ),
+                child: Icon(icon, color: AppColors.primary, size: context.r(18)),
               ),
               SizedBox(width: context.r(12)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      label,
-                      style: GoogleFonts.tajawal(
-                        fontSize: context.sp(10),
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                    Text(
-                      value,
-                      style: GoogleFonts.tajawal(
-                        fontSize: context.sp(13),
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1B2D5E),
-                      ),
-                    ),
+                    Text(label,
+                        style: GoogleFonts.tajawal(
+                            fontSize: context.sp(10),
+                            color: Colors.grey.shade500)),
+                    Text(value,
+                        style: GoogleFonts.tajawal(
+                            fontSize: context.sp(13),
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1B2D5E))),
                   ],
                 ),
               ),
@@ -273,8 +263,7 @@ class OwnerProfilePropertyCard extends StatelessWidget {
             // Thumbnail
             ClipRRect(
               borderRadius: BorderRadius.horizontal(
-                left: Radius.circular(context.r(14)),
-              ),
+                  left: Radius.circular(context.r(14))),
               child: SizedBox(
                 width: context.r(96),
                 height: context.r(96),
@@ -307,11 +296,8 @@ class OwnerProfilePropertyCard extends StatelessWidget {
                     SizedBox(height: context.r(4)),
                     Row(
                       children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: context.r(11),
-                          color: Colors.grey.shade400,
-                        ),
+                        Icon(Icons.location_on_outlined,
+                            size: context.r(11), color: Colors.grey.shade400),
                         SizedBox(width: context.r(3)),
                         Expanded(
                           child: Text(
@@ -352,15 +338,15 @@ class OwnerProfilePropertyCard extends StatelessWidget {
   }
 
   Widget _placeholder(BuildContext context) => Container(
-    color: AppColors.primary.withValues(alpha: 0.07),
-    child: Center(
-      child: Icon(
-        Icons.apartment_rounded,
-        color: AppColors.primary.withValues(alpha: 0.35),
-        size: context.r(28),
-      ),
-    ),
-  );
+        color: AppColors.primary.withValues(alpha: 0.07),
+        child: Center(
+          child: Icon(
+            Icons.apartment_rounded,
+            color: AppColors.primary.withValues(alpha: 0.35),
+            size: context.r(28),
+          ),
+        ),
+      );
 }
 
 class _TypeBadge extends StatelessWidget {
@@ -393,35 +379,47 @@ class _TypeBadge extends StatelessWidget {
 }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
+// FIX: The original skeleton used a bare Column that could exceed the screen
+// height (e.g. on small devices or when a keyboard is open), causing a
+// RenderFlex overflow of 291px. Fixed by wrapping the cards area in
+// Expanded + SingleChildScrollView so it always fits.
 
 class OwnerProfileSkeleton extends StatelessWidget {
   const OwnerProfileSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF5F7FA),
-    body: Column(
-      children: [
-        Container(height: context.r(310), color: const Color(0xFF1565C0)),
-        Padding(
-          padding: context.rAll(16),
-          child: Column(
-            children: List.generate(
-              4,
-              (i) => Container(
-                height: context.r(96),
-                margin: context.rOnly(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(context.r(14)),
+        backgroundColor: const Color(0xFFF5F7FA),
+        body: Column(
+          children: [
+            // Fixed-height gradient header (matches the real header)
+            Container(
+              height: context.r(310),
+              color: const Color(0xFF1565C0),
+            ),
+            // Skeleton cards — Expanded prevents overflow on small screens
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                padding: context.rAll(16),
+                child: Column(
+                  children: List.generate(
+                    4,
+                    (i) => Container(
+                      height: context.r(96),
+                      margin: context.rOnly(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(context.r(14)),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 // ── Error body ────────────────────────────────────────────────────────────────
@@ -437,43 +435,40 @@ class OwnerProfileErrorBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF5F7FA),
-    body: Center(
-      child: Padding(
-        padding: context.rAll(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: context.r(48),
-              color: Colors.redAccent,
-            ),
-            SizedBox(height: context.r(12)),
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.tajawal(
-                fontSize: context.sp(13),
-                color: Colors.grey.shade700,
-              ),
-            ),
-            SizedBox(height: context.r(20)),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text('retry'.tr(context)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(context.r(12)),
+        backgroundColor: const Color(0xFFF5F7FA),
+        body: Center(
+          child: Padding(
+            padding: context.rAll(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline_rounded,
+                    size: context.r(48), color: Colors.redAccent),
+                SizedBox(height: context.r(12)),
+                Text(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.tajawal(
+                    fontSize: context.sp(13),
+                    color: Colors.grey.shade700,
+                  ),
                 ),
-              ),
+                SizedBox(height: context.r(20)),
+                ElevatedButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text('retry'.tr(context)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(context.r(12)),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }

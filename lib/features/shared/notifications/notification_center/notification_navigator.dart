@@ -1,13 +1,3 @@
-// lib/features/shared/notifications/notification_center/notification_navigator.dart
-//
-// Handles deep-link navigation from both live FCM taps and
-// notification-center history row taps.
-//
-// Supported types:
-//   new_message → open the specific chat conversation
-//   new_property → open the property details screen
-//   new_comment  → open the property that received the comment
-
 import 'package:aqar_hub/features/house_seeker/home/data/datasources/property_datasource_impl.dart';
 import 'package:aqar_hub/features/house_seeker/home/data/repositories/property_repository_impl.dart';
 import 'package:aqar_hub/features/house_seeker/home/presentation/views/property_details_view.dart';

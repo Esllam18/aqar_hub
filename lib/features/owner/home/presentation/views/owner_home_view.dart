@@ -7,6 +7,7 @@ import 'package:aqar_hub/features/owner/home/data/repositories/owner_properties_
 import 'package:aqar_hub/features/owner/home/presentation/cubit/owner_home_cubit.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/dashboard/owner_activity_tip.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/dashboard/owner_alerts_section.dart';
+import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/dashboard/owner_comments_section.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/dashboard/owner_kpi_row.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/dashboard/owner_quick_actions.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/dashboard/owner_revenue_banner.dart';
@@ -48,6 +49,7 @@ class _OwnerHomeContent extends StatefulWidget {
 
 class _OwnerHomeContentState extends State<_OwnerHomeContent> {
   OwnerHomeFilter _filter = OwnerHomeFilter.all;
+
   List<OwnerPropertyModel> _applyFilter(List<OwnerPropertyModel> list) {
     return switch (_filter) {
       OwnerHomeFilter.all => list.toList(),
@@ -76,9 +78,9 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
         builder: (context, state) {
           final loaded = state is OwnerHomeLoaded ? state : null;
           final all = loaded?.properties ?? [];
-          final List<OwnerPropertyModel> filtered = loaded == null
-              ? []
-              : _applyFilter(all);
+          final List<OwnerPropertyModel> filtered =
+              loaded == null ? [] : _applyFilter(all);
+
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: context.read<OwnerHomeCubit>().refresh,
@@ -87,10 +89,10 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                 parent: BouncingScrollPhysics(),
               ),
               slivers: [
-                // ── Gradient header ──────────────────────────────────────
+                // ── Gradient header ────────────────────────────────────
                 SliverToBoxAdapter(child: _DashboardTop(state: state)),
 
-                // ── Dashboard body ───────────────────────────────────────
+                // ── Dashboard widgets ──────────────────────────────────
                 if (loaded != null) ...[
                   SliverToBoxAdapter(
                     child: OwnerRevenueBanner(
@@ -106,7 +108,7 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                   ),
                 ],
 
-                // ── Filter bar ───────────────────────────────────────────
+                // ── Filter bar ─────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: _FilterSection(
                     selected: _filter,
@@ -115,7 +117,7 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                   ),
                 ),
 
-                // ── Tip card (below filter, above alerts) ────────────────
+                // ── Tip card ───────────────────────────────────────────
                 if (loaded != null)
                   SliverToBoxAdapter(
                     child: OwnerActivityTip(
@@ -125,7 +127,7 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                     ),
                   ),
 
-                // ── Standalone alerts section ─────────────────────────────
+                // ── Alerts section ─────────────────────────────────────
                 if (loaded != null && loaded.alertsCount > 0)
                   SliverToBoxAdapter(
                     child: OwnerAlertsSection(
@@ -135,7 +137,15 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                     ),
                   ),
 
-                // ── Body states ──────────────────────────────────────────
+                // ── NEW: Comments on owner's properties ────────────────
+                // Shown whenever data is loaded (even if zero comments,
+                // the widget returns SizedBox.shrink internally).
+                if (loaded != null)
+                  const SliverToBoxAdapter(
+                    child: OwnerCommentsSection(),
+                  ),
+
+                // ── Body states ────────────────────────────────────────
                 if (state is OwnerHomeLoading)
                   _LoadingSliver()
                 else if (state is OwnerHomeError)
@@ -172,7 +182,7 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
   }
 }
 
-// ── Dashboard top (gradient background with KPIs) ─────────────────────────────
+// ── Dashboard top ─────────────────────────────────────────────────────────────
 
 class _DashboardTop extends StatelessWidget {
   final OwnerHomeState state;

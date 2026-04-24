@@ -1,8 +1,3 @@
-// lib/features/shared/notifications/notification_center/notification_center_view.dart
-//
-// Full notification history screen.
-// Shows read/unread states, mark-all-read, deep-link on tap.
-
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
@@ -117,8 +112,7 @@ class _NotificationCenterBodyState extends State<_NotificationCenterBody> {
                     style: GoogleFonts.cairo(color: Colors.grey),
                   ),
                   TextButton(
-                    onPressed: () =>
-                        ctx.read<NotificationCenterCubit>().load(),
+                    onPressed: () => ctx.read<NotificationCenterCubit>().load(),
                     child: Text('btn_retry'.tr(context)),
                   ),
                 ],
@@ -131,11 +125,8 @@ class _NotificationCenterBodyState extends State<_NotificationCenterBody> {
               controller: _scrollCtrl,
               padding: context.rSymmetric(vertical: 12),
               itemCount: state.items.length + (state.hasMore ? 1 : 0),
-              separatorBuilder: (_, __) => const Divider(
-                height: 1,
-                indent: 72,
-                endIndent: 16,
-              ),
+              separatorBuilder: (_, __) =>
+                  const Divider(height: 1, indent: 72, endIndent: 16),
               itemBuilder: (_, i) {
                 if (i >= state.items.length) {
                   return const Padding(
@@ -153,6 +144,8 @@ class _NotificationCenterBodyState extends State<_NotificationCenterBody> {
                   item: item,
                   onTap: () {
                     ctx.read<NotificationCenterCubit>().markAsRead(item.id);
+                    // Deep-link: navigateFromLog closes the sheet, switches tab,
+                    // then pushes the correct screen (chat, property, or comment property)
                     NotificationNavigator.navigateFromLog(
                       context,
                       item,
@@ -180,12 +173,14 @@ class _NotificationTile extends StatelessWidget {
   IconData get _icon {
     if (item.isChat) return Icons.chat_bubble_outline_rounded;
     if (item.isProperty) return Icons.apartment_rounded;
+    if (item.isComment) return Icons.comment_outlined;
     return Icons.notifications_none_rounded;
   }
 
   Color get _iconColor {
     if (item.isChat) return const Color(0xFF039BE5);
     if (item.isProperty) return AppColors.primary;
+    if (item.isComment) return const Color(0xFF059669);
     return const Color(0xFFFF6B35);
   }
 
@@ -209,7 +204,9 @@ class _NotificationTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        color: item.isRead ? Colors.transparent : AppColors.primary.withValues(alpha: 0.04),
+        color: item.isRead
+            ? Colors.transparent
+            : AppColors.primary.withValues(alpha: 0.04),
         padding: context.rSymmetric(horizontal: 16, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,7 +234,9 @@ class _NotificationTile extends StatelessWidget {
                           item.title,
                           style: GoogleFonts.cairo(
                             fontSize: context.sp(13.5),
-                            fontWeight: item.isRead ? FontWeight.w600 : FontWeight.w800,
+                            fontWeight: item.isRead
+                                ? FontWeight.w600
+                                : FontWeight.w800,
                             color: const Color(0xFF1B2D5E),
                           ),
                           maxLines: 1,

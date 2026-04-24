@@ -1,3 +1,7 @@
+// lib/features/shared/notifications/notification_center/notification_log_model.dart
+//
+// Maps the notification_log Supabase table to a Dart model.
+
 class NotificationLogModel {
   final String id;
   final String recipientId;
