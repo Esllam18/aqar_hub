@@ -1,7 +1,3 @@
-// lib/features/shared/notifications/notification_center/notification_center_cubit.dart
-//
-// Loads, paginates, and marks notifications as read.
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,13 +14,17 @@ class NotificationCenterLoading extends NotificationCenterState {}
 class NotificationCenterLoaded extends NotificationCenterState {
   final List<NotificationLogModel> items;
   final bool hasMore;
+  final int unreadCount;
 
-  NotificationCenterLoaded({required this.items, required this.hasMore});
+  NotificationCenterLoaded({
+    required this.items,
+    required this.hasMore,
+    required this.unreadCount,
+  });
 }
 
 class NotificationCenterError extends NotificationCenterState {
   final String message;
-
   NotificationCenterError(this.message);
 }
 
@@ -38,6 +38,8 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
   final _db = Supabase.instance.client;
   final List<NotificationLogModel> _items = [];
 
+  int get unreadCount => _items.where((n) => !n.isRead).length;
+
   // ── Load first page ────────────────────────────────────────────────────────
 
   Future<void> load() async {
@@ -46,7 +48,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     await _fetchPage(offset: 0, isFirstLoad: true);
   }
 
-  // ── Load next page (called by scroll listener) ─────────────────────────────
+  // ── Load next page ─────────────────────────────────────────────────────────
 
   Future<void> loadMore() async {
     if (state is! NotificationCenterLoaded) return;
@@ -79,16 +81,21 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           .toList();
 
       _items.addAll(fetched);
-      emit(
-        NotificationCenterLoaded(
-          items: List.unmodifiable(_items),
-          hasMore: fetched.length == _pageSize,
-        ),
-      );
+      _emitLoaded(fetched.length == _pageSize);
     } catch (e) {
       debugPrint('[NotifCenter] fetch error: $e');
       if (isFirstLoad) emit(NotificationCenterError(e.toString()));
     }
+  }
+
+  void _emitLoaded(bool hasMore) {
+    emit(
+      NotificationCenterLoaded(
+        items: List.unmodifiable(_items),
+        hasMore: hasMore,
+        unreadCount: unreadCount,
+      ),
+    );
   }
 
   // ── Mark one as read ───────────────────────────────────────────────────────
@@ -99,12 +106,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
 
     _items[idx] = _items[idx].copyWith(isRead: true);
     if (state is NotificationCenterLoaded) {
-      emit(
-        NotificationCenterLoaded(
-          items: List.unmodifiable(_items),
-          hasMore: (state as NotificationCenterLoaded).hasMore,
-        ),
-      );
+      _emitLoaded((state as NotificationCenterLoaded).hasMore);
     }
 
     try {
@@ -124,12 +126,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       _items[i] = _items[i].copyWith(isRead: true);
     }
     if (state is NotificationCenterLoaded) {
-      emit(
-        NotificationCenterLoaded(
-          items: List.unmodifiable(_items),
-          hasMore: (state as NotificationCenterLoaded).hasMore,
-        ),
-      );
+      _emitLoaded((state as NotificationCenterLoaded).hasMore);
     }
 
     try {
@@ -142,6 +139,4 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       debugPrint('[NotifCenter] markAllRead error: $e');
     }
   }
-
-  int get unreadCount => _items.where((n) => !n.isRead).length;
 }

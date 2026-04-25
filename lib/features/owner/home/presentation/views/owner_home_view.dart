@@ -21,6 +21,8 @@ import 'package:aqar_hub/core/services/navigation/navigation.dart';
 import 'package:aqar_hub/features/owner/add_property/presentation/view/add_property_view.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/features/owner/owner_sale/presentation/cubit/owner_home_state.dart';
+import 'package:aqar_hub/features/shared/notifications/notification_center/notification_center_cubit.dart';
+import 'package:aqar_hub/features/shared/notifications/notification_center/notification_center_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -37,8 +39,6 @@ class OwnerHomeView extends StatelessWidget {
     );
   }
 }
-
-// ── Content ───────────────────────────────────────────────────────────────────
 
 class _OwnerHomeContent extends StatefulWidget {
   const _OwnerHomeContent();
@@ -78,8 +78,9 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
         builder: (context, state) {
           final loaded = state is OwnerHomeLoaded ? state : null;
           final all = loaded?.properties ?? [];
-          final List<OwnerPropertyModel> filtered =
-              loaded == null ? [] : _applyFilter(all);
+          final List<OwnerPropertyModel> filtered = loaded == null
+              ? []
+              : _applyFilter(all);
 
           return RefreshIndicator(
             color: AppColors.primary,
@@ -89,10 +90,8 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                 parent: BouncingScrollPhysics(),
               ),
               slivers: [
-                // ── Gradient header ────────────────────────────────────
                 SliverToBoxAdapter(child: _DashboardTop(state: state)),
 
-                // ── Dashboard widgets ──────────────────────────────────
                 if (loaded != null) ...[
                   SliverToBoxAdapter(
                     child: OwnerRevenueBanner(
@@ -108,7 +107,6 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                   ),
                 ],
 
-                // ── Filter bar ─────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: _FilterSection(
                     selected: _filter,
@@ -117,7 +115,6 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                   ),
                 ),
 
-                // ── Tip card ───────────────────────────────────────────
                 if (loaded != null)
                   SliverToBoxAdapter(
                     child: OwnerActivityTip(
@@ -127,7 +124,6 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                     ),
                   ),
 
-                // ── Alerts section ─────────────────────────────────────
                 if (loaded != null && loaded.alertsCount > 0)
                   SliverToBoxAdapter(
                     child: OwnerAlertsSection(
@@ -137,15 +133,10 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                     ),
                   ),
 
-                // ── NEW: Comments on owner's properties ────────────────
-                // Shown whenever data is loaded (even if zero comments,
-                // the widget returns SizedBox.shrink internally).
+                // Comments on owner's properties
                 if (loaded != null)
-                  const SliverToBoxAdapter(
-                    child: OwnerCommentsSection(),
-                  ),
+                  const SliverToBoxAdapter(child: OwnerCommentsSection()),
 
-                // ── Body states ────────────────────────────────────────
                 if (state is OwnerHomeLoading)
                   _LoadingSliver()
                 else if (state is OwnerHomeError)
@@ -222,6 +213,8 @@ class _DashboardTop extends StatelessWidget {
   }
 }
 
+// ── Owner App Bar — bell replaces refresh icon ────────────────────────────────
+
 class _OwnerAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -245,14 +238,79 @@ class _OwnerAppBar extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(
-              Icons.refresh_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-            tooltip: 'Refresh',
-            onPressed: () => context.read<OwnerHomeCubit>().refresh(),
+          // ── Notification bell with badge ─────────────────────────────
+          BlocBuilder<NotificationCenterCubit, NotificationCenterState>(
+            builder: (ctx, notifState) {
+              final unread = notifState is NotificationCenterLoaded
+                  ? notifState.unreadCount
+                  : 0;
+              return GestureDetector(
+                onTap: () =>
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BlocProvider.value(
+                          value: ctx.read<NotificationCenterCubit>(),
+                          child: NotificationCenterView(onSwitchTab: (_) {}),
+                        ),
+                      ),
+                    ).then((_) {
+                      // Refresh count after coming back from notification center
+                      ctx.read<NotificationCenterCubit>().load();
+                    }),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.25),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    if (unread > 0)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4.5,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            unread > 99 ? '99+' : '$unread',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -297,8 +355,6 @@ class _FilterSection extends StatelessWidget {
   }
 }
 
-// ── Loading skeleton ──────────────────────────────────────────────────────────
-
 class _LoadingSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -320,8 +376,6 @@ class _LoadingSliver extends StatelessWidget {
     );
   }
 }
-
-// ── Property list ─────────────────────────────────────────────────────────────
 
 class _PropertyList extends StatelessWidget {
   final List<OwnerPropertyModel> properties;

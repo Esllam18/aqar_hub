@@ -16,41 +16,41 @@ abstract final class NotificationNavigator {
   }) async {
     if (payload.isChat) {
       onSwitchTab(1);
-      if (payload.conversationId?.isNotEmpty == true) {
-        await Future.delayed(const Duration(milliseconds: 300));
+      final convId = payload.conversationId ?? '';
+      if (convId.isNotEmpty) {
+        await Future.delayed(const Duration(milliseconds: 350));
         if (!context.mounted) return;
         await ChatNavigator.openChatByConversationId(
           context,
-          conversationId: payload.conversationId!,
+          conversationId: convId,
           otherUserId: payload.senderId ?? '',
         );
       }
     } else if (payload.isProperty || payload.isComment) {
-      // Both property and comment notifications navigate to property details.
-      // Switch to home tab first so the back button returns the user there.
+      // Switch to home tab so back-button lands there
       onSwitchTab(0);
-      final propertyId = payload.propertyId;
-      if (propertyId?.isNotEmpty == true) {
+      final propertyId = payload.propertyId ?? '';
+      if (propertyId.isNotEmpty) {
         await Future.delayed(const Duration(milliseconds: 350));
         if (!context.mounted) return;
-        await _openPropertyById(context, propertyId!);
+        await _openPropertyById(context, propertyId);
       }
     }
   }
 
-  // ── From notification center history tap ───────────────────────────────────
+  // ── From notification history tap ─────────────────────────────────────────
 
   static Future<void> navigateFromLog(
     BuildContext context,
     NotificationLogModel log, {
     required void Function(int) onSwitchTab,
   }) async {
-    // Close the notification center drawer first
+    // Close the notification center screen first
     Navigator.of(context).pop();
 
     if (log.isChat && log.conversationId.isNotEmpty) {
       onSwitchTab(1);
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 350));
       if (!context.mounted) return;
       await ChatNavigator.openChatByConversationId(
         context,
@@ -65,7 +65,7 @@ abstract final class NotificationNavigator {
     }
   }
 
-  // ── Private: fetch property by ID and push details screen ─────────────────
+  // ── Shared: fetch property and push detail screen ─────────────────────────
 
   static Future<void> _openPropertyById(
     BuildContext context,

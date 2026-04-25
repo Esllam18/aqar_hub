@@ -22,14 +22,13 @@ class CommentsCubit extends Cubit<CommentsState> {
     required CommentsRepository repo,
     required this.propertyId,
     required this.propertyOwnerId,
-  })  : _repo = repo,
-        super(const CommentsInitial());
+  }) : _repo = repo,
+       super(const CommentsInitial());
 
   String? get myId => _repo.currentUserIdOrNull;
 
   bool canDelete(CommentModel comment) =>
-      myId != null &&
-      (myId == comment.userId || myId == propertyOwnerId);
+      myId != null && (myId == comment.userId || myId == propertyOwnerId);
 
   // ── Load ──────────────────────────────────────────────────────────────────
 
@@ -38,10 +37,12 @@ class CommentsCubit extends Cubit<CommentsState> {
     try {
       final comments = await _repo.getComments(propertyId: propertyId);
       if (!isClosed) {
-        emit(CommentsLoaded(
-          comments: comments,
-          hasMore: comments.length >= _pageSize,
-        ));
+        emit(
+          CommentsLoaded(
+            comments: comments,
+            hasMore: comments.length >= _pageSize,
+          ),
+        );
         _subscribe();
       }
     } catch (e, s) {
@@ -66,11 +67,13 @@ class CommentsCubit extends Cubit<CommentsState> {
         before: oldest,
       );
       if (!isClosed) {
-        emit(loaded.copyWith(
-          comments: [...loaded.comments, ...more],
-          hasMore: more.length >= _pageSize,
-          loadingMore: false,
-        ));
+        emit(
+          loaded.copyWith(
+            comments: [...loaded.comments, ...more],
+            hasMore: more.length >= _pageSize,
+            loadingMore: false,
+          ),
+        );
       }
     } catch (e) {
       debugPrint('[CommentsCubit] loadMore error: $e');
@@ -80,14 +83,6 @@ class CommentsCubit extends Cubit<CommentsState> {
     }
   }
 
-  // ── Add comment (optimistic insert) ───────────────────────────────────────
-  // The comment is shown immediately using the cached user profile.
-  // Once the DB confirms the insert, we replace the optimistic entry with
-  // the real one (correct server-assigned UUID). If the realtime event fires
-  // before addComment returns, _onCommentInserted will see the real ID is not
-  // yet in the list and add it — the next replaceOptimistic call will then
-  // find nothing to replace and is a no-op, leaving the real entry in place.
-
   Future<void> addComment(String content) async {
     final loaded = state;
     if (loaded is! CommentsLoaded) return;
@@ -95,7 +90,8 @@ class CommentsCubit extends Cubit<CommentsState> {
     if (trimmed.isEmpty) return;
 
     final uid = _repo.currentUserId;
-    final optimisticId = '$_optimisticPrefix${DateTime.now().millisecondsSinceEpoch}';
+    final optimisticId =
+        '$_optimisticPrefix${DateTime.now().millisecondsSinceEpoch}';
 
     // Build optimistic entry from cached profile data
     final optimistic = CommentModel(
@@ -111,10 +107,12 @@ class CommentsCubit extends Cubit<CommentsState> {
     );
 
     // Show instantly — newest first
-    emit(loaded.copyWith(
-      comments: [optimistic, ...loaded.comments],
-      submitting: true,
-    ));
+    emit(
+      loaded.copyWith(
+        comments: [optimistic, ...loaded.comments],
+        submitting: true,
+      ),
+    );
 
     try {
       final real = await _repo.addComment(
@@ -125,12 +123,14 @@ class CommentsCubit extends Cubit<CommentsState> {
       // Replace optimistic entry with the real DB row
       if (!isClosed && state is CommentsLoaded) {
         final current = (state as CommentsLoaded).comments;
-        emit((state as CommentsLoaded).copyWith(
-          comments: current
-              .map((c) => c.id == optimisticId ? real : c)
-              .toList(),
-          submitting: false,
-        ));
+        emit(
+          (state as CommentsLoaded).copyWith(
+            comments: current
+                .map((c) => c.id == optimisticId ? real : c)
+                .toList(),
+            submitting: false,
+          ),
+        );
       }
     } catch (e) {
       debugPrint('[CommentsCubit] addComment error: $e');
@@ -141,7 +141,9 @@ class CommentsCubit extends Cubit<CommentsState> {
           submitting: false,
           comments: current.where((c) => c.id != optimisticId).toList(),
         );
-        emit(CommentsSubmitError(previousState: reverted, message: e.toString()));
+        emit(
+          CommentsSubmitError(previousState: reverted, message: e.toString()),
+        );
         emit(reverted);
       }
     }
@@ -199,16 +201,18 @@ class CommentsCubit extends Cubit<CommentsState> {
     );
     if (hasMatchingOptimistic) {
       // Swap the optimistic entry for the real one right now
-      emit(loaded.copyWith(
-        comments: loaded.comments.map((c) {
-          if (c.id.startsWith(_optimisticPrefix) &&
-              c.userId == comment.userId &&
-              c.content == comment.content) {
-            return comment;
-          }
-          return c;
-        }).toList(),
-      ));
+      emit(
+        loaded.copyWith(
+          comments: loaded.comments.map((c) {
+            if (c.id.startsWith(_optimisticPrefix) &&
+                c.userId == comment.userId &&
+                c.content == comment.content) {
+              return comment;
+            }
+            return c;
+          }).toList(),
+        ),
+      );
       return;
     }
 

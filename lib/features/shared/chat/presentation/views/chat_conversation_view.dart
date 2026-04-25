@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:aqar_hub/core/helpers/app_prefs.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:aqar_hub/features/owner/owner_profile/presentation/view/owner_profile_page.dart';
@@ -76,6 +77,13 @@ class _State extends State<ChatConversationView> {
   static const _pageSize = 30;
   String get _myId => _repo.currentUserId;
 
+  // FIX: Use the current user's own name as the notification title (sender name).
+  // Previously used widget.otherUserName which is the RECIPIENT — wrong.
+  String get _senderName {
+    final cached = AppPrefs.userName.trim();
+    return cached.isNotEmpty ? cached : 'رسالة جديدة';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -136,12 +144,9 @@ class _State extends State<ChatConversationView> {
       unawaited(_repo.goOnline());
       _subscribePresence();
 
-      // FIX: Send the initial property card BEFORE subscribing to realtime messages.
-      // Previously, the subscription was live while the send + push awaited, so the
-      // realtime INSERT event arrived and added the message, then the code below also
-      // added it — creating a duplicate. By starting the subscription AFTER we have
-      // manually added the sent message, the dedup check always catches any late
-      // realtime echo.
+      // FIX: Send the initial property card BEFORE subscribing to realtime.
+      // This prevents the duplicate card bug: the subscription would have
+      // received the INSERT event AND the code below also added it manually.
       if (_messages.isEmpty && widget.initialPropertyCard != null) {
         final sent = await _repo.sendText(
           conversationId: widget.conversationId,
@@ -157,8 +162,8 @@ class _State extends State<ChatConversationView> {
         }
       }
 
-      // Subscribe only now — _messages already contains the initial card (if any),
-      // so the dedup guard in onMessage will prevent any duplicate.
+      // Subscribe only now — _messages already contains the initial card so
+      // any late realtime echo will be caught by the dedup guard in onMessage.
       _subscribeMessages();
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
     } catch (_) {
@@ -170,15 +175,15 @@ class _State extends State<ChatConversationView> {
     if (!_streamCtrl.isClosed) _streamCtrl.add(List.unmodifiable(_messages));
   }
 
-  // ── Push notification helper ───────────────────────────────────────────────
+  // ── Push notification ─────────────────────────────────────────────────────
+  // FIX: title is now _senderName (the current user = the sender),
+  // NOT widget.otherUserName (which was the recipient's name).
 
   Future<void> _sendPush(String body) async {
     try {
       await FcmService.instance.sendPushToUser(
         recipientUid: widget.otherUserId,
-        title: widget.otherUserName.isNotEmpty
-            ? widget.otherUserName
-            : 'رسالة جديدة',
+        title: _senderName,
         body: body.length > 100 ? '${body.substring(0, 100)}...' : body,
         type: 'new_message',
         data: {'conversation_id': widget.conversationId},
@@ -301,7 +306,6 @@ class _State extends State<ChatConversationView> {
         conversationId: widget.conversationId,
         text: text,
       );
-      // Push notification to recipient — awaited so errors are logged
       await _sendPush(text);
       if (mounted && !_messages.any((m) => m.id == sent.id)) {
         _messages = [..._messages, sent];
@@ -373,7 +377,6 @@ class _State extends State<ChatConversationView> {
           _push();
         }
       }
-      // Single notification for all images sent together
       await _sendPush('📷 صورة');
       if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback(

@@ -19,10 +19,12 @@ import 'package:aqar_hub/features/shared/profile/presentation/widgets/profile_vi
 import 'package:aqar_hub/features/shared/profile/presentation/widgets/profile_view/profile_logout_button.dart';
 import 'package:aqar_hub/features/shared/profile/presentation/widgets/profile_view/profile_menu_card.dart';
 import 'package:aqar_hub/features/shared/profile/presentation/widgets/profile_view/profile_menu_tile.dart';
+import 'package:aqar_hub/features/shared/notifications/notification_center/notification_center_cubit.dart';
 import 'package:aqar_hub/features/shared/notifications/notification_center/notification_center_view.dart';
 import 'package:aqar_hub/features/shared/profile/presentation/widgets/profile_view/property_list/profile_property_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProfileBody extends StatelessWidget {
   final ProfileModel profile;
@@ -80,14 +82,16 @@ class ProfileBody extends StatelessWidget {
   );
 
   void _pushNotifications(BuildContext ctx) {
+    final notifCubit = ctx.read<NotificationCenterCubit>();
     Navigator.push(
       ctx,
       MaterialPageRoute(
-        builder: (_) => NotificationCenterView(
-          onSwitchTab: (_) {}, // Profile doesn't own the tab controller
+        builder: (_) => BlocProvider.value(
+          value: notifCubit,
+          child: NotificationCenterView(onSwitchTab: (_) {}),
         ),
       ),
-    );
+    ).then((_) => notifCubit.load());
   }
 
   @override
@@ -114,59 +118,111 @@ class ProfileBody extends StatelessWidget {
             ),
             SliverToBoxAdapter(child: SizedBox(height: context.r(20))),
 
-            // ── Account ─────────────────────────────────────────────────
+            // ── Account ──────────────────────────────────────────────────
             AnimationSecation(
               delay: 80,
-              child: ProfileMenuCard(
-                titleKey: 'profile_section_account',
-                tiles: [
-                  ProfileMenuTile(
-                    icon: Icons.person_outline_rounded,
-                    iconColor: AppColors.primary,
-                    labelKey: 'profile_menu_edit',
-                    onTap: () => _pushEdit(context),
-                  ),
-                  ProfileMenuTile(
-                    icon: Icons.lock_outline_rounded,
-                    iconColor: const Color(0xFF43A047),
-                    labelKey: 'profile_menu_change_password',
-                    onTap: () => _pushChangePassword(context),
-                  ),
-                  if (effectiveRole == AppRole.seeker)
-                    ProfileMenuTile(
-                      icon: Icons.favorite_border_rounded,
-                      iconColor: const Color(0xFFE53935),
-                      labelKey: 'profile_menu_favorites',
-                      trailing: ProfileCountBadge(
-                        count: profile.favoritesCount,
-                        color: const Color(0xFFE53935),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Section label
+                  Padding(
+                    padding: context.rOnly(bottom: 10, left: 4, right: 4),
+                    child: Text(
+                      'profile_section_account'.tr(context),
+                      style: GoogleFonts.cairo(
+                        fontSize: context.sp(11),
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey.shade500,
+                        letterSpacing: 0.8,
                       ),
-                      onTap: () => _openFavoritesList(context),
                     ),
-                  if (effectiveRole == AppRole.owner)
-                    ProfileMenuTile(
-                      icon: Icons.apartment_rounded,
-                      iconColor: AppColors.primary,
-                      labelKey: 'profile_menu_my_apartments',
-                      trailing: ProfileCountBadge(
-                        count: profile.apartmentsCount,
-                        color: AppColors.primary,
-                      ),
-                      onTap: () => _openPropertiesList(context),
+                  ),
+                  // Account card (strictly typed List<ProfileMenuTile>)
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(context.r(18)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                  ProfileMenuTile(
-                    icon: Icons.notifications_none_rounded,
-                    iconColor: const Color(0xFFFF6B35),
-                    labelKey: 'profile_menu_notifications',
-                    onTap: () => _pushNotifications(context),
-                    showDivider: false,
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        ProfileMenuTile(
+                          icon: Icons.person_outline_rounded,
+                          iconColor: AppColors.primary,
+                          labelKey: 'profile_menu_edit',
+                          onTap: () => _pushEdit(context),
+                        ),
+                        ProfileMenuTile(
+                          icon: Icons.lock_outline_rounded,
+                          iconColor: const Color(0xFF43A047),
+                          labelKey: 'profile_menu_change_password',
+                          onTap: () => _pushChangePassword(context),
+                        ),
+                        if (effectiveRole == AppRole.seeker)
+                          ProfileMenuTile(
+                            icon: Icons.favorite_border_rounded,
+                            iconColor: const Color(0xFFE53935),
+                            labelKey: 'profile_menu_favorites',
+                            trailing: ProfileCountBadge(
+                              count: profile.favoritesCount,
+                              color: const Color(0xFFE53935),
+                            ),
+                            onTap: () => _openFavoritesList(context),
+                          ),
+                        if (effectiveRole == AppRole.owner)
+                          ProfileMenuTile(
+                            icon: Icons.apartment_rounded,
+                            iconColor: AppColors.primary,
+                            labelKey: 'profile_menu_my_apartments',
+                            trailing: ProfileCountBadge(
+                              count: profile.apartmentsCount,
+                              color: AppColors.primary,
+                            ),
+                            onTap: () => _openPropertiesList(context),
+                          ),
+                        // Notification tile — BlocBuilder wraps a ProfileMenuTile
+                        // OUTSIDE the typed list, placed directly in Column children.
+                        BlocBuilder<
+                          NotificationCenterCubit,
+                          NotificationCenterState
+                        >(
+                          builder: (ctx, notifState) {
+                            final unread =
+                                notifState is NotificationCenterLoaded
+                                ? notifState.unreadCount
+                                : 0;
+                            return ProfileMenuTile(
+                              icon: Icons.notifications_none_rounded,
+                              iconColor: const Color(0xFFFF6B35),
+                              labelKey: 'profile_menu_notifications',
+                              trailing: unread > 0
+                                  ? ProfileCountBadge(
+                                      count: unread,
+                                      color: const Color(0xFFFF6B35),
+                                    )
+                                  : null,
+                              onTap: () => _pushNotifications(context),
+                              showDivider: false,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
             SliverToBoxAdapter(child: SizedBox(height: context.r(14))),
 
-            // ── Preferences ─────────────────────────────────────────────
+            // ── Preferences ──────────────────────────────────────────────
             AnimationSecation(
               delay: 160,
               child: ProfileMenuCard(

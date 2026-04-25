@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_non_null_assertion
+
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/enums/app_role.dart';
 import 'package:aqar_hub/features/house_seeker/favorites/data/datasources/favorites_datasource.dart';
@@ -12,6 +14,7 @@ import 'package:aqar_hub/features/shared/chat/data/repositories/chat_repository_
 import 'package:aqar_hub/features/shared/chat/presentation/cubit/conversation_list_cubit.dart';
 import 'package:aqar_hub/features/shared/chat/presentation/views/conversation_list_view.dart';
 import 'package:aqar_hub/features/shared/notifications/fcm_service.dart';
+import 'package:aqar_hub/features/shared/notifications/notification_center/notification_center_cubit.dart';
 import 'package:aqar_hub/features/shared/notifications/notification_center/notification_navigator.dart';
 import 'package:aqar_hub/features/shared/profile/data/datasources/profile_datasource_impl.dart';
 import 'package:aqar_hub/features/shared/profile/data/repositories/profile_repository_impl.dart';
@@ -44,8 +47,9 @@ class _MainLayoutViewState extends State<MainLayoutView>
 
   late final ConversationListCubit _chatCubit;
   late final FavoritesCubit? _favCubit;
+  // Global notification cubit — shared across all tabs and profile
+  late final NotificationCenterCubit _notifCubit;
 
-  // Cache the repo so we can call goOnline/goOffline from lifecycle callbacks
   late final ChatRepositoryImpl _chatRepo;
 
   String get _uid => Supabase.instance.client.auth.currentUser?.id ?? '';
@@ -79,6 +83,9 @@ class _MainLayoutViewState extends State<MainLayoutView>
     _chatRepo = ChatRepositoryImpl(ChatRemoteDatasource());
     _chatCubit = ConversationListCubit(_chatRepo)..load();
 
+    // Load notification count immediately so badges are ready
+    _notifCubit = NotificationCenterCubit()..load();
+
     FcmService.instance.setOnTap(_handleNotificationTap);
 
     _favCubit = _isOwner
@@ -87,13 +94,13 @@ class _MainLayoutViewState extends State<MainLayoutView>
             ..loadFavoriteIds());
   }
 
-  // ── App lifecycle — correct place to manage online/offline status ──────────
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
         _chatRepo.goOnline();
+        // Refresh notification count when app comes back to foreground
+        _notifCubit.load();
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
         _chatRepo.goOffline();
@@ -103,6 +110,8 @@ class _MainLayoutViewState extends State<MainLayoutView>
   }
 
   void _handleNotificationTap(NotificationPayload payload) {
+    // Reload notifications so badge updates after tap
+    _notifCubit.load();
     NotificationNavigator.navigateFromPayload(
       context,
       payload,
@@ -118,14 +127,12 @@ class _MainLayoutViewState extends State<MainLayoutView>
     _fabCtrl.dispose();
     _chatCubit.close();
     _favCubit?.close();
+    _notifCubit.close();
     super.dispose();
   }
 
-  // ── Count helpers ──────────────────────────────────────────────────────────
-
   int _unreadCount(ConversationListState state) {
     if (state is! ConversationListLoaded) return 0;
-    // Use null-safe myIdOrNull to avoid crash during hot-reload / auth restore
     final myId = _chatCubit.myIdOrNull;
     if (myId == null) return 0;
     return state.conversations.fold(0, (sum, c) => sum + c.unreadFor(myId));
@@ -140,7 +147,10 @@ class _MainLayoutViewState extends State<MainLayoutView>
     };
   }
 
-  // ── Screens ────────────────────────────────────────────────────────────────
+  int _notifUnreadCount(NotificationCenterState state) {
+    if (state is NotificationCenterLoaded) return state.unreadCount;
+    return 0;
+  }
 
   List<Widget> _buildScreens() {
     final profilePage = BlocProvider(
@@ -197,11 +207,13 @@ class _MainLayoutViewState extends State<MainLayoutView>
       child: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: _chatCubit),
-          if (_favCubit != null) BlocProvider.value(value: _favCubit),
+          BlocProvider.value(value: _notifCubit),
+          if (_favCubit != null) BlocProvider.value(value: _favCubit!),
         ],
         child: Builder(
           builder: (ctx) {
             final chatState = ctx.watch<ConversationListCubit>().state;
+            final notifState = ctx.watch<NotificationCenterCubit>().state;
             final favState = _favCubit != null
                 ? ctx.watch<FavoritesCubit>().state
                 : null;
@@ -227,6 +239,7 @@ class _MainLayoutViewState extends State<MainLayoutView>
                 role: widget.role,
                 unreadChatCount: _unreadCount(chatState),
                 favCount: _favCount(favState),
+                unreadNotifCount: _notifUnreadCount(notifState),
               ),
               floatingActionButton: _isOwner
                   ? AppFabButton(

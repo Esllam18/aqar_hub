@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:aqar_hub/core/helpers/app_prefs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -64,8 +65,6 @@ class ChatCubit extends Cubit<ChatState> {
   final ChatRepositoryImpl _repo;
   final String conversationId;
   final String otherUserId;
-
-  // The other user's display name — used in push notification title
   final String otherUserName;
 
   RealtimeChannel? _msgChannel;
@@ -83,7 +82,15 @@ class ChatCubit extends Cubit<ChatState> {
 
   String get myId => _repo.currentUserId;
 
-  // ── Initial load ─────────────────────────────────────────────────────────
+  // ── Sender name helper ────────────────────────────────────────────────────
+  // The notification title must be the SENDER's name (current user),
+  // not the recipient's name. AppPrefs.userName is set at login/profile load.
+  String get _senderName {
+    final cached = AppPrefs.userName.trim();
+    return cached.isNotEmpty ? cached : 'رسالة جديدة';
+  }
+
+  // ── Initial load ──────────────────────────────────────────────────────────
 
   Future<void> load() async {
     emit(const ChatLoading());
@@ -145,10 +152,10 @@ class ChatCubit extends Cubit<ChatState> {
     _stopTyping();
     try {
       await _repo.sendText(conversationId: conversationId, text: text);
-      // Await the push so errors are visible in debug logs
       await FcmService.instance.sendPushToUser(
         recipientUid: otherUserId,
-        title: otherUserName.isNotEmpty ? otherUserName : 'رسالة جديدة',
+        // FIX: Use the sender's own name, not the recipient's name
+        title: _senderName,
         body: text.length > 80 ? '${text.substring(0, 80)}...' : text,
         type: 'new_message',
         data: {'conversation_id': conversationId},
@@ -179,7 +186,8 @@ class ChatCubit extends Cubit<ChatState> {
       final label = type == MessageType.image ? '📷 صورة' : '🎤 رسالة صوتية';
       await FcmService.instance.sendPushToUser(
         recipientUid: otherUserId,
-        title: otherUserName.isNotEmpty ? otherUserName : 'رسالة جديدة',
+        // FIX: Use the sender's own name, not the recipient's name
+        title: _senderName,
         body: label,
         type: 'new_message',
         data: {'conversation_id': conversationId},

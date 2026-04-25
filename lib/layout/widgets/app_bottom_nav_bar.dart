@@ -1,5 +1,3 @@
-// lib/layout/widgets/app_bottom_nav_bar.dart
-
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/enums/app_role.dart';
@@ -12,6 +10,7 @@ class AppBottomNavBar extends StatelessWidget {
   final AppRole role;
   final int unreadChatCount;
   final int favCount;
+  final int unreadNotifCount;
 
   const AppBottomNavBar({
     super.key,
@@ -20,6 +19,7 @@ class AppBottomNavBar extends StatelessWidget {
     required this.role,
     this.unreadChatCount = 0,
     this.favCount = 0,
+    this.unreadNotifCount = 0,
   });
 
   bool get _isOwner => role == AppRole.owner;
@@ -36,7 +36,11 @@ class AppBottomNavBar extends StatelessWidget {
           badge: unreadChatCount,
         ),
         _NavItem(icon: Icons.sell_rounded, label: 'nav_sales'.tr(context)),
-        _NavItem(icon: Icons.person_rounded, label: 'nav_profile'.tr(context)),
+        _NavItem(
+          icon: Icons.person_rounded,
+          label: 'nav_profile'.tr(context),
+          badge: unreadNotifCount,
+        ),
       ];
     }
     return [
@@ -51,7 +55,11 @@ class AppBottomNavBar extends StatelessWidget {
         label: 'nav_favorites'.tr(context),
         badge: favCount,
       ),
-      _NavItem(icon: Icons.person_rounded, label: 'nav_profile'.tr(context)),
+      _NavItem(
+        icon: Icons.person_rounded,
+        label: 'nav_profile'.tr(context),
+        badge: unreadNotifCount,
+      ),
     ];
   }
 
@@ -91,7 +99,6 @@ class AppBottomNavBar extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Icon with badge
                         Stack(
                           clipBehavior: Clip.none,
                           children: [
@@ -140,8 +147,6 @@ class AppBottomNavBar extends StatelessWidget {
     );
   }
 }
-
-// ── Badge ─────────────────────────────────────────────────────────────────────
 
 class _Badge extends StatelessWidget {
   final int count;
