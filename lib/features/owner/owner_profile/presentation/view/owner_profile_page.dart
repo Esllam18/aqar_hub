@@ -202,7 +202,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   String get _roleLabel {
     if (_profile == null) return '';
     final r = _profile!.role ?? 'owner';
-    return r == 'seeker' ? 'role_seeker'.tr(context) : 'role_owner'.tr(context);
+    return r == 'user' ? 'role_seeker'.tr(context) : 'role_owner'.tr(context);
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────────

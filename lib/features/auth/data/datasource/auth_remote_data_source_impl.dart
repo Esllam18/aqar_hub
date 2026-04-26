@@ -91,7 +91,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> sendPasswordReset(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
+    // redirectTo must match the intent filter scheme in AndroidManifest.xml
+    // AND must be added to Supabase Auth → URL Configuration → Redirect URLs
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'io.supabase.aqarhub://reset-password',
+    );
   }
 
   @override

@@ -74,15 +74,7 @@ android {
         }
     }
 
-    splits {
-        abi {
-            isEnable = gradle.startParameter.taskNames.any { taskName ->
-                taskName.contains("Release", ignoreCase = true)
-            }
-            reset()
-            isUniversalApk = false
-        }
-    }
+
 }
 
 flutter {

@@ -98,19 +98,38 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
     }
   }
 
-  Future<void> _openMap(double? lat, double? lng, String title) async {
-    if (lat == null || lng == null) return;
-    final geoUri = Uri.parse(
-      'geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(title)})',
-    );
-    final webUri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-    );
-    try {
-      await launchUrl(geoUri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      await launchUrl(webUri, mode: LaunchMode.externalApplication);
+  Future<void> _openMap(
+    double? lat,
+    double? lng,
+    String title, {
+    String? locationLink,
+  }) async {
+    // Priority 1: use the owner-specified Google Maps link (most precise)
+    if (locationLink != null && locationLink.trim().isNotEmpty) {
+      final uri = Uri.tryParse(locationLink.trim());
+      if (uri != null) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
     }
+
+    // Priority 2: use lat/lng coordinates
+    if (lat != null && lng != null) {
+      final geoUri = Uri.parse(
+        'geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(title)})',
+      );
+      final webUri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+      );
+      try {
+        await launchUrl(geoUri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
+    // No location available — silently ignore (button should be hidden upstream)
   }
 
   void _openChat(BuildContext ctx) {
@@ -198,7 +217,8 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
                             child: DetailsVideoPlayer(url: p.videoUrl!),
                           ),
                         ],
-                        if (p.latitude != null && p.longitude != null) ...[
+                        if (p.latitude != null && p.longitude != null ||
+                            p.locationLink.isNotEmpty) ...[
                           SizedBox(height: context.r(18)),
                           AppAnimations.fade(
                             duration: const Duration(milliseconds: 350),
@@ -206,8 +226,12 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
                             child: DetailsLocationCard(
                               address: p.address.isNotEmpty ? p.address : null,
                               city: p.city.isNotEmpty ? p.city : null,
-                              onOpen: () =>
-                                  _openMap(p.latitude, p.longitude, p.title),
+                              onOpen: () => _openMap(
+                                p.latitude,
+                                p.longitude,
+                                p.title,
+                                locationLink: p.locationLink,
+                              ),
                             ),
                           ),
                         ],
@@ -278,11 +302,21 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
         ),
         bottomNavigationBar: _isOwner
             ? DetailsLocationOnlyBar(
-                onLocation: () => _openMap(p.latitude, p.longitude, p.title),
+                onLocation: () => _openMap(
+                  p.latitude,
+                  p.longitude,
+                  p.title,
+                  locationLink: p.locationLink,
+                ),
               )
             : DetailsActionButtons(
                 onWhatsApp: () => _openWhatsApp(p.ownerPhone),
-                onLocation: () => _openMap(p.latitude, p.longitude, p.title),
+                onLocation: () => _openMap(
+                  p.latitude,
+                  p.longitude,
+                  p.title,
+                  locationLink: p.locationLink,
+                ),
                 onChat: () => _openChat(context),
               ),
       ),

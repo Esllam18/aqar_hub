@@ -33,6 +33,7 @@ class PropertyModel {
   final String? citySlug;
   final String? areaSlug;
   final String? locationPath;
+  final String locationLink;
 
   const PropertyModel({
     required this.id,
@@ -67,6 +68,7 @@ class PropertyModel {
     this.citySlug,
     this.areaSlug,
     this.locationPath,
+    this.locationLink = '',
   });
 
   String? get firstImage => imageUrls.isNotEmpty ? imageUrls.first : null;
@@ -121,6 +123,7 @@ class PropertyModel {
     String? citySlug,
     String? areaSlug,
     String? locationPath,
+    String? locationLink,
   }) {
     return PropertyModel(
       id: id ?? this.id,
@@ -155,6 +158,7 @@ class PropertyModel {
       citySlug: citySlug ?? this.citySlug,
       areaSlug: areaSlug ?? this.areaSlug,
       locationPath: locationPath ?? this.locationPath,
+      locationLink: locationLink ?? this.locationLink,
     );
   }
 
@@ -302,6 +306,7 @@ class PropertyModel {
       citySlug: _readString(m, ['cityslug', 'city_slug']),
       areaSlug: _readString(m, ['areaslug', 'area_slug']),
       locationPath: _readString(m, ['locationpath', 'location_path']),
+      locationLink: _readString(m, ['locationlink', 'location_link']),
     );
   }
 }

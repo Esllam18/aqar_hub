@@ -38,8 +38,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
   void _submit() {
     setState(() {
-      _passwordError = _passwordCtrl.text.length < 6
-          ? 'val_password_short'
+      _passwordError = _passwordCtrl.text.isEmpty
+          ? 'val_password_required'
+          : _passwordCtrl.text.length < 8
+          ? 'val_password_min_8'
           : null;
       _confirmError = _passwordCtrl.text != _confirmCtrl.text
           ? 'val_passwords_mismatch'
