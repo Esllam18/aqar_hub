@@ -109,14 +109,33 @@ class _MainLayoutViewState extends State<MainLayoutView>
     }
   }
 
+  // FIX: Separate the tab-switch from the post-navigation push.
+  // The old _handleNotificationTap passed _onNavTapped which has an
+  // early-return guard "if (_currentIndex == index) return" — so if the
+  // user was already on the Home tab and tapped a property notification,
+  // _onNavTapped returned immediately and the property detail screen was
+  // never pushed. We now use _switchTabForNotification which always jumps
+  // to the tab AND always lets NotificationNavigator push its route after.
   void _handleNotificationTap(NotificationPayload payload) {
-    // Reload notifications so badge updates after tap
     _notifCubit.load();
+    if (!mounted) return;
     NotificationNavigator.navigateFromPayload(
       context,
       payload,
-      onSwitchTab: _onNavTapped,
+      onSwitchTab: _switchTabForNotification,
     );
+  }
+
+  // Like _onNavTapped but WITHOUT the early-return guard.
+  // This ensures the tab is switched even when we are already on it,
+  // so NotificationNavigator can then push the correct detail screen on top.
+  void _switchTabForNotification(int index) {
+    HapticFeedback.selectionClick();
+    if (_currentIndex != index) {
+      setState(() => _currentIndex = index);
+      _pageController.jumpToPage(index); // jumpToPage — no animation delay
+    }
+    // No early return: NotificationNavigator will push its route right after.
   }
 
   @override

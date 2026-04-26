@@ -74,31 +74,38 @@ class CommentsDatasource {
     return rows.first;
   }
 
-  // ── Soft-delete ───────────────────────────────────────────────────────────
-  // Uses UPDATE is_deleted = true so the row stays in the DB for audit.
-  // RLS policy "comments_update_own_or_owner" allows this for:
-  //   • the comment author (auth.uid() = user_id)
-  //   • the property owner (owner_id = auth.uid())
-
   Future<void> softDeleteComment(String commentId) async {
     debugPrint('[Comments] softDeleteComment: $commentId');
-    final result = await _db
-        .from('property_comments')
-        .update({'is_deleted': true})
-        .eq('id', commentId)
-        .select(
-          'id',
-        ); // select forces a response so we can detect empty results
 
-    final rows = result as List;
-    if (rows.isEmpty) {
-      // RLS blocked the update — the current user doesn't own this comment
-      // and doesn't own the property. This should not happen if canDelete()
-      // is checked in the UI before calling deleteComment().
-      debugPrint('[Comments] softDeleteComment: RLS blocked — no rows updated');
-      throw Exception('comment_delete_not_permitted');
+    try {
+      final result = await _db.rpc(
+        'soft_delete_comment',
+        params: {'p_comment_id': commentId},
+      );
+
+      // The function returns TRUE on success, FALSE if not found,
+      // and throws an exception if not authorized.
+      final success = result as bool? ?? false;
+      if (!success) {
+        debugPrint(
+          '[Comments] softDeleteComment: comment not found or already deleted',
+        );
+        throw Exception('comment_not_found');
+      }
+
+      debugPrint('[Comments] softDeleteComment: success');
+    } on PostgrestException catch (e) {
+      debugPrint(
+        '[Comments] softDeleteComment PostgrestException: ${e.message}',
+      );
+      // Map RPC exceptions back to meaningful errors
+      if (e.message.contains('not_authorized')) {
+        throw Exception('comment_delete_not_permitted');
+      } else if (e.message.contains('not_authenticated')) {
+        throw Exception('not_authenticated');
+      }
+      rethrow;
     }
-    debugPrint('[Comments] softDeleteComment: success');
   }
 
   // ── Realtime subscription ─────────────────────────────────────────────────

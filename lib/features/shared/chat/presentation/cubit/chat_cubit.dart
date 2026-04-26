@@ -83,11 +83,39 @@ class ChatCubit extends Cubit<ChatState> {
   String get myId => _repo.currentUserId;
 
   // ── Sender name helper ────────────────────────────────────────────────────
-  // The notification title must be the SENDER's name (current user),
-  // not the recipient's name. AppPrefs.userName is set at login/profile load.
-  String get _senderName {
+  // FIX: Fetches the current user's real name from cache first, then DB.
+  // This ensures the notification title always shows the SENDER's name,
+  // not some stale or wrong value.
+  Future<String> _fetchSenderName() async {
+    // Fast path: use cached name if available
     final cached = AppPrefs.userName.trim();
-    return cached.isNotEmpty ? cached : 'رسالة جديدة';
+    if (cached.isNotEmpty) return cached;
+
+    // Slow path: fetch fresh from DB and cache it
+    try {
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid == null) return 'رسالة جديدة';
+
+      final row = await Supabase.instance.client
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', uid)
+          .maybeSingle();
+
+      if (row == null) return 'رسالة جديدة';
+
+      final first = (row['first_name'] ?? '').toString().trim();
+      final last = (row['last_name'] ?? '').toString().trim();
+      final name = '$first $last'.trim();
+
+      if (name.isNotEmpty) {
+        await AppPrefs.saveUserName(name);
+      }
+      return name.isNotEmpty ? name : 'رسالة جديدة';
+    } catch (e) {
+      debugPrint('[ChatCubit] _fetchSenderName error: $e');
+      return 'رسالة جديدة';
+    }
   }
 
   // ── Initial load ──────────────────────────────────────────────────────────
@@ -152,13 +180,19 @@ class ChatCubit extends Cubit<ChatState> {
     _stopTyping();
     try {
       await _repo.sendText(conversationId: conversationId, text: text);
+
+      // FIX: Fetch sender's real name; add sender_id so notification tap
+      // can navigate directly to this conversation.
+      final senderName = await _fetchSenderName();
       await FcmService.instance.sendPushToUser(
         recipientUid: otherUserId,
-        // FIX: Use the sender's own name, not the recipient's name
-        title: _senderName,
+        title: senderName,
         body: text.length > 80 ? '${text.substring(0, 80)}...' : text,
         type: 'new_message',
-        data: {'conversation_id': conversationId},
+        data: {
+          'conversation_id': conversationId,
+          'sender_id': myId, // FIX: included so tap navigates correctly
+        },
       );
     } catch (e) {
       debugPrint('ChatCubit.sendText error: $e');
@@ -183,14 +217,19 @@ class ChatCubit extends Cubit<ChatState> {
         type: type,
         durationSecs: durationSecs,
       );
+
+      // FIX: Fetch sender's real name; add sender_id so tap navigates correctly.
+      final senderName = await _fetchSenderName();
       final label = type == MessageType.image ? '📷 صورة' : '🎤 رسالة صوتية';
       await FcmService.instance.sendPushToUser(
         recipientUid: otherUserId,
-        // FIX: Use the sender's own name, not the recipient's name
-        title: _senderName,
+        title: senderName,
         body: label,
         type: 'new_message',
-        data: {'conversation_id': conversationId},
+        data: {
+          'conversation_id': conversationId,
+          'sender_id': myId, // FIX: included so tap navigates correctly
+        },
       );
     } catch (e) {
       debugPrint('ChatCubit.sendMedia error: $e');
