@@ -10,7 +10,6 @@ import 'package:aqar_hub/features/house_seeker/home/presentation/views/property_
 import 'package:aqar_hub/features/house_seeker/home/presentation/views/property_details/details_video_player.dart';
 import 'package:aqar_hub/features/owner/home/presentation/widgets/owner_home/details_owner_card.dart';
 import 'package:aqar_hub/features/shared/chat/chat_navigator.dart';
-// ── NEW ──────────────────────────────────────────────────────────────────────
 import 'package:aqar_hub/features/shared/comments/presentation/view/comments_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -317,7 +316,7 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
                   p.title,
                   locationLink: p.locationLink,
                 ),
-                onChat: () => _openChat(context),
+                onChat: () async => _openChat(context),
               ),
       ),
     );

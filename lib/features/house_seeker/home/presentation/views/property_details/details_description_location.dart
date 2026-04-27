@@ -1,7 +1,3 @@
-// lib/features/house_seeker/home/presentation/views/property_details/details_description_location.dart
-//
-// Expandable description card + location card + owner-only bottom bar.
-
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
@@ -190,9 +186,28 @@ class DetailsLocationCard extends StatelessWidget {
 
 // ── Owner-only bottom bar (location button only) ──────────────────────────────
 
-class DetailsLocationOnlyBar extends StatelessWidget {
+class DetailsLocationOnlyBar extends StatefulWidget {
   final VoidCallback onLocation;
   const DetailsLocationOnlyBar({super.key, required this.onLocation});
+
+  @override
+  State<DetailsLocationOnlyBar> createState() => _DetailsLocationOnlyBarState();
+}
+
+class _DetailsLocationOnlyBarState extends State<DetailsLocationOnlyBar> {
+  bool _loading = false;
+
+  Future<void> _handle() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      widget.onLocation();
+      // Give the OS a moment to open the external app before clearing state
+      await Future.delayed(const Duration(milliseconds: 600));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -220,8 +235,17 @@ class DetailsLocationOnlyBar extends StatelessWidget {
         width: double.infinity,
         height: context.r(50),
         child: ElevatedButton.icon(
-          onPressed: onLocation,
-          icon: Icon(Icons.location_on_rounded, size: context.r(18)),
+          onPressed: _loading ? null : _handle,
+          icon: _loading
+              ? SizedBox(
+                  width: context.r(18),
+                  height: context.r(18),
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: Colors.white,
+                  ),
+                )
+              : Icon(Icons.location_on_rounded, size: context.r(18)),
           label: Text(
             'details_btn_location'.tr(context),
             style: GoogleFonts.cairo(
@@ -231,7 +255,9 @@ class DetailsLocationOnlyBar extends StatelessWidget {
             ),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1E88E5),
+            backgroundColor: _loading
+                ? const Color(0xFF1E88E5).withValues(alpha: 0.65)
+                : const Color(0xFF1E88E5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(context.r(16)),
             ),

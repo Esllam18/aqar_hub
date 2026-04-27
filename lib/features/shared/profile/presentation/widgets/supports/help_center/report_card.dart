@@ -11,7 +11,7 @@ class ReportCard extends StatelessWidget {
     // Opens the device email app pre-filled with a report template
     final uri = Uri(
       scheme: 'mailto',
-      path: 'support@aqarhub.app',
+      path: 'esllam.maherr@gmail.com',
       queryParameters: {
         'subject': 'AqarHub — Report / Bug',
         'body': 'Describe your issue here...',

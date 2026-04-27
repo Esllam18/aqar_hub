@@ -4,10 +4,12 @@ import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class DetailsActionButtons extends StatelessWidget {
-  final VoidCallback onWhatsApp;
-  final VoidCallback onLocation;
-  final VoidCallback? onChat;
+// ── Main action buttons bar (seeker view) ────────────────────────────────────
+
+class DetailsActionButtons extends StatefulWidget {
+  final Future<void> Function() onWhatsApp;
+  final Future<void> Function() onLocation;
+  final Future<void> Function()? onChat;
 
   const DetailsActionButtons({
     super.key,
@@ -15,6 +17,30 @@ class DetailsActionButtons extends StatelessWidget {
     required this.onLocation,
     this.onChat,
   });
+
+  @override
+  State<DetailsActionButtons> createState() => _DetailsActionButtonsState();
+}
+
+class _DetailsActionButtonsState extends State<DetailsActionButtons> {
+  bool _loadingWhatsApp = false;
+  bool _loadingLocation = false;
+  bool _loadingChat = false;
+
+  bool get _anyLoading => _loadingWhatsApp || _loadingLocation || _loadingChat;
+
+  Future<void> _handle(
+    Future<void> Function() action,
+    void Function(bool) setLoading,
+  ) async {
+    if (_anyLoading) return;
+    setLoading(true);
+    try {
+      await action();
+    } finally {
+      if (mounted) setLoading(false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,31 +68,46 @@ class DetailsActionButtons extends StatelessWidget {
         children: [
           Expanded(
             flex: 3,
-            child: _SolidButton(
+            child: _ActionButton(
               label: 'details_btn_whatsapp'.tr(context),
               icon: Icons.chat_rounded,
               color: const Color(0xFF25D366),
-              onTap: onWhatsApp,
+              isLoading: _loadingWhatsApp,
+              filled: true,
+              onTap: () => _handle(
+                widget.onWhatsApp,
+                (v) => setState(() => _loadingWhatsApp = v),
+              ),
             ),
           ),
           SizedBox(width: context.r(10)),
           Expanded(
             flex: 2,
-            child: _OutlineButton(
+            child: _ActionButton(
               label: 'details_btn_location'.tr(context),
               icon: Icons.location_on_rounded,
               color: const Color(0xFF1E88E5),
-              onTap: onLocation,
+              isLoading: _loadingLocation,
+              filled: false,
+              onTap: () => _handle(
+                widget.onLocation,
+                (v) => setState(() => _loadingLocation = v),
+              ),
             ),
           ),
           SizedBox(width: context.r(10)),
           Expanded(
             flex: 2,
-            child: _OutlineButton(
+            child: _ActionButton(
               label: 'details_btn_chat'.tr(context),
               icon: Icons.forum_outlined,
               color: AppColors.primary,
-              onTap: onChat ?? () {},
+              isLoading: _loadingChat,
+              filled: false,
+              onTap: () => _handle(
+                widget.onChat ?? () async {},
+                (v) => setState(() => _loadingChat = v),
+              ),
             ),
           ),
         ],
@@ -75,96 +116,79 @@ class DetailsActionButtons extends StatelessWidget {
   }
 }
 
-class _SolidButton extends StatelessWidget {
+// ── Shared animated button ────────────────────────────────────────────────────
+
+class _ActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color color;
+  final bool isLoading;
+  final bool filled;
   final VoidCallback onTap;
 
-  const _SolidButton({
+  const _ActionButton({
     required this.label,
     required this.icon,
     required this.color,
+    required this.isLoading,
+    required this.filled,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTap: isLoading ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         height: context.r(50),
-        padding: context.rSymmetric(horizontal: 12),
+        padding: context.rSymmetric(horizontal: filled ? 12 : 10),
         decoration: BoxDecoration(
-          color: color,
+          color: filled
+              ? (isLoading ? color.withValues(alpha: 0.65) : color)
+              : color.withValues(alpha: isLoading ? 0.03 : 0.06),
           borderRadius: BorderRadius.circular(context.r(16)),
+          border: filled
+              ? null
+              : Border.all(color: color.withValues(alpha: 0.14)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: context.r(18)),
-            SizedBox(width: context.r(6)),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.cairo(
-                  fontSize: context.sp(12),
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: isLoading
+                  ? SizedBox(
+                      key: const ValueKey('loader'),
+                      width: context.r(18),
+                      height: context.r(18),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: filled ? Colors.white : color,
+                      ),
+                    )
+                  : Icon(
+                      key: const ValueKey('icon'),
+                      icon,
+                      color: filled ? Colors.white : color,
+                      size: context.r(filled ? 18 : 17),
+                    ),
+            ),
+            if (!isLoading) ...[
+              SizedBox(width: context.r(5)),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.cairo(
+                    fontSize: context.sp(filled ? 12 : 11),
+                    fontWeight: FontWeight.w800,
+                    color: filled ? Colors.white : color,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OutlineButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _OutlineButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: context.r(50),
-        padding: context.rSymmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(context.r(16)),
-          border: Border.all(color: color.withValues(alpha: 0.14)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: context.r(17)),
-            SizedBox(width: context.r(5)),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.cairo(
-                  fontSize: context.sp(11),
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                ),
-              ),
-            ),
+            ],
           ],
         ),
       ),

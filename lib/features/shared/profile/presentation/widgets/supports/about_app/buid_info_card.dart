@@ -35,7 +35,7 @@ class BuildInfoCard extends StatelessWidget {
           Divider(height: context.r(20), color: Colors.grey.shade100),
           _BuildRow(
             label: 'about_developer_label'.tr(context),
-            value: 'ُEslam Maher',
+            value: 'Eslam Maher',
             valueColor: Colors.grey.shade700,
           ),
         ],

@@ -1,8 +1,3 @@
-// lib/features/shared/profile/presentation/views/contact_us_view.dart
-//
-// Fully redesigned Contact Us with real contact info:
-// Phone: 01155374945 | Instagram: esllam_x3 | Email: esllam.maherr@gmail.com
-
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/navigation/navigation.dart';
@@ -46,14 +41,17 @@ class ContactUsView extends StatelessWidget {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Gradient header
+          // ── Gradient header ──────────────────────────────────────────
           SliverAppBar(
             expandedHeight: context.r(160),
             pinned: true,
             backgroundColor: AppColors.primary,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white, size: context.r(20)),
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+                size: context.r(20),
+              ),
               onPressed: Navigation.back,
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -76,20 +74,33 @@ class ContactUsView extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            width: 1.5,
+                          ),
                         ),
-                        child: Icon(Icons.headset_mic_rounded,
-                            color: Colors.white, size: context.r(28)),
+                        child: Icon(
+                          Icons.headset_mic_rounded,
+                          color: Colors.white,
+                          size: context.r(28),
+                        ),
                       ),
                       SizedBox(height: context.r(10)),
-                      Text('contact_title'.tr(context),
-                          style: GoogleFonts.cairo(
-                              fontSize: context.sp(20),
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white)),
-                      Text('contact_subtitle'.tr(context),
-                          style: GoogleFonts.tajawal(
-                              fontSize: context.sp(12),
-                              color: Colors.white.withValues(alpha: 0.75))),
+                      Text(
+                        'contact_title'.tr(context),
+                        style: GoogleFonts.cairo(
+                          fontSize: context.sp(20),
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'contact_subtitle'.tr(context),
+                        style: GoogleFonts.tajawal(
+                          fontSize: context.sp(12),
+                          color: Colors.white.withValues(alpha: 0.75),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -103,11 +114,11 @@ class ContactUsView extends StatelessWidget {
               delegate: SliverChildListDelegate([
                 SizedBox(height: context.r(4)),
 
-                // ── Direct contact ───────────────────────────────────────
+                // ── Direct contact channels ──────────────────────────────
                 _SectionLabel(label: 'contact_channels_title'.tr(context)),
                 SizedBox(height: context.r(12)),
 
-                // Phone — Call + WhatsApp + Telegram in one card
+                // Phone card — tap = call, long-press = copy
                 _ContactCard(
                   icon: Icons.phone_rounded,
                   gradient: const [Color(0xFF1565C0), Color(0xFF1E88E5)],
@@ -116,8 +127,11 @@ class ContactUsView extends StatelessWidget {
                   badge: 'contact_badge_instant'.tr(context),
                   badgeColor: const Color(0xFF43A047),
                   onTap: () => _launch('tel:+20$_phone'),
-                  onLongPress: () =>
-                      _copyToClipboard(context, _phone, 'contact_phone_title'.tr(context)),
+                  onLongPress: () => _copyToClipboard(
+                    context,
+                    _phone,
+                    'contact_phone_title'.tr(context),
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -139,7 +153,7 @@ class ContactUsView extends StatelessWidget {
                 ),
                 SizedBox(height: context.r(10)),
 
-                // Email
+                // Email card
                 _ContactCard(
                   icon: Icons.email_rounded,
                   gradient: const [Color(0xFF0277BD), Color(0xFF039BE5)],
@@ -148,12 +162,15 @@ class ContactUsView extends StatelessWidget {
                   badge: 'contact_badge_24h'.tr(context),
                   badgeColor: const Color(0xFF039BE5),
                   onTap: () => _launch('mailto:$_email'),
-                  onLongPress: () =>
-                      _copyToClipboard(context, _email, 'contact_email_title'.tr(context)),
+                  onLongPress: () => _copyToClipboard(
+                    context,
+                    _email,
+                    'contact_email_title'.tr(context),
+                  ),
                 ),
                 SizedBox(height: context.r(10)),
 
-                // Instagram
+                // Instagram card
                 _ContactCard(
                   icon: Icons.photo_camera_rounded,
                   gradient: const [Color(0xFFE91E63), Color(0xFFAD1457)],
@@ -161,8 +178,7 @@ class ContactUsView extends StatelessWidget {
                   value: '@$_instagram',
                   badge: 'contact_badge_dm'.tr(context),
                   badgeColor: const Color(0xFFE91E63),
-                  onTap: () =>
-                      _launch('https://instagram.com/$_instagram'),
+                  onTap: () => _launch('https://instagram.com/$_instagram'),
                   onLongPress: () =>
                       _copyToClipboard(context, _instagram, 'Instagram'),
                 ),
@@ -204,6 +220,54 @@ class ContactUsView extends StatelessWidget {
                   ],
                 ),
 
+                SizedBox(height: context.r(24)),
+
+                // ── Working hours info card ───────────────────────────────
+                _SectionLabel(label: 'contact_hours_title'.tr(context)),
+                SizedBox(height: context.r(12)),
+                Container(
+                  padding: context.rAll(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(context.r(16)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: context.r(44),
+                        height: context.r(44),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(context.r(12)),
+                        ),
+                        child: Icon(
+                          Icons.access_time_rounded,
+                          color: AppColors.primary,
+                          size: context.r(22),
+                        ),
+                      ),
+                      SizedBox(width: context.r(14)),
+                      Expanded(
+                        child: Text(
+                          'contact_hours_value'.tr(context),
+                          style: GoogleFonts.tajawal(
+                            fontSize: context.sp(13),
+                            color: Colors.grey.shade700,
+                            height: 1.7,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 SizedBox(height: context.r(80)),
               ]),
             ),
@@ -214,16 +278,16 @@ class ContactUsView extends StatelessWidget {
   }
 }
 
-// ── Contact card ──────────────────────────────────────────────────────────────
+// ── Contact card with loading indicator ──────────────────────────────────────
 
-class _ContactCard extends StatelessWidget {
+class _ContactCard extends StatefulWidget {
   final IconData icon;
   final List<Color> gradient;
   final String title;
   final String value;
   final String badge;
   final Color badgeColor;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
   final VoidCallback onLongPress;
   final Widget? trailing;
 
@@ -240,11 +304,29 @@ class _ContactCard extends StatelessWidget {
   });
 
   @override
+  State<_ContactCard> createState() => _ContactCardState();
+}
+
+class _ContactCardState extends State<_ContactCard> {
+  bool _loading = false;
+
+  Future<void> _handle() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      await widget.onTap();
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: Container(
+      onTap: _loading ? null : _handle,
+      onLongPress: widget.onLongPress,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: context.rAll(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -264,45 +346,62 @@ class _ContactCard extends StatelessWidget {
               height: context.r(48),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: gradient,
+                  colors: widget.gradient,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(context.r(14)),
               ),
-              child: Icon(icon, color: Colors.white, size: context.r(22)),
+              child: _loading
+                  ? Padding(
+                      padding: EdgeInsets.all(context.r(12)),
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Icon(widget.icon, color: Colors.white, size: context.r(22)),
             ),
             SizedBox(width: context.r(12)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: GoogleFonts.tajawal(
-                          fontSize: context.sp(11),
-                          color: Colors.grey.shade500)),
-                  Text(value,
-                      style: GoogleFonts.cairo(
-                          fontSize: context.sp(13.5),
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1B2D5E))),
+                  Text(
+                    widget.title,
+                    style: GoogleFonts.tajawal(
+                      fontSize: context.sp(11),
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                  Text(
+                    widget.value,
+                    style: GoogleFonts.cairo(
+                      fontSize: context.sp(13.5),
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1B2D5E),
+                    ),
+                  ),
                   SizedBox(height: context.r(4)),
                   Container(
                     padding: context.rSymmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: badgeColor.withValues(alpha: 0.10),
+                      color: widget.badgeColor.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(context.r(6)),
                     ),
-                    child: Text(badge,
-                        style: GoogleFonts.tajawal(
-                            fontSize: context.sp(10),
-                            color: badgeColor,
-                            fontWeight: FontWeight.w600)),
+                    child: Text(
+                      widget.badge,
+                      style: GoogleFonts.tajawal(
+                        fontSize: context.sp(10),
+                        color: widget.badgeColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            if (trailing != null) trailing!,
+            if (widget.trailing != null) widget.trailing!,
           ],
         ),
       ),
@@ -312,11 +411,11 @@ class _ContactCard extends StatelessWidget {
 
 // ── Mini action button ────────────────────────────────────────────────────────
 
-class _MiniAction extends StatelessWidget {
+class _MiniAction extends StatefulWidget {
   final IconData icon;
   final Color color;
   final String tooltip;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
 
   const _MiniAction({
     required this.icon,
@@ -326,32 +425,57 @@ class _MiniAction extends StatelessWidget {
   });
 
   @override
+  State<_MiniAction> createState() => _MiniActionState();
+}
+
+class _MiniActionState extends State<_MiniAction> {
+  bool _loading = false;
+
+  Future<void> _handle() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      await widget.onTap();
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: tooltip,
+      message: widget.tooltip,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: _loading ? null : _handle,
         child: Container(
           width: context.r(36),
           height: context.r(36),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
+            color: widget.color.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: color, size: context.r(18)),
+          child: _loading
+              ? Padding(
+                  padding: EdgeInsets.all(context.r(9)),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: widget.color,
+                  ),
+                )
+              : Icon(widget.icon, color: widget.color, size: context.r(18)),
         ),
       ),
     );
   }
 }
 
-// ── Social button ─────────────────────────────────────────────────────────────
+// ── Social button with loading ────────────────────────────────────────────────
 
-class _SocialBtn extends StatelessWidget {
+class _SocialBtn extends StatefulWidget {
   final IconData icon;
   final String label;
   final Color color;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
 
   const _SocialBtn({
     required this.icon,
@@ -361,17 +485,35 @@ class _SocialBtn extends StatelessWidget {
   });
 
   @override
+  State<_SocialBtn> createState() => _SocialBtnState();
+}
+
+class _SocialBtnState extends State<_SocialBtn> {
+  bool _loading = false;
+
+  Future<void> _handle() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      await widget.onTap();
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTap: _loading ? null : _handle,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: context.rSymmetric(vertical: 14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(context.r(14)),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.12),
+              color: widget.color.withValues(alpha: _loading ? 0.05 : 0.12),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -379,13 +521,25 @@ class _SocialBtn extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: context.r(24)),
+            _loading
+                ? SizedBox(
+                    width: context.r(22),
+                    height: context.r(22),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: widget.color,
+                    ),
+                  )
+                : Icon(widget.icon, color: widget.color, size: context.r(24)),
             SizedBox(height: context.r(6)),
-            Text(label,
-                style: GoogleFonts.tajawal(
-                    fontSize: context.sp(11),
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w600)),
+            Text(
+              widget.label,
+              style: GoogleFonts.tajawal(
+                fontSize: context.sp(11),
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -401,13 +555,26 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: GoogleFonts.cairo(
-        fontSize: context.sp(13.5),
-        fontWeight: FontWeight.w800,
-        color: const Color(0xFF1B2D5E),
-      ),
+    return Row(
+      children: [
+        Container(
+          width: context.r(4),
+          height: context.r(16),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        SizedBox(width: context.r(8)),
+        Text(
+          label,
+          style: GoogleFonts.cairo(
+            fontSize: context.sp(13.5),
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1B2D5E),
+          ),
+        ),
+      ],
     );
   }
 }
