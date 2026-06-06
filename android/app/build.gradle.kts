@@ -2,16 +2,15 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
     id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// ── Load keystore properties ──────────────────────────────────────────────────
+// ── Load keystore properties ────────────────────────────────────
 val keystorePropertiesFile = rootProject.file("app/key.properties")
 val keystoreProperties = Properties()
+
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
@@ -31,7 +30,6 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
-    // ── Signing ───────────────────────────────────────────────────────────────
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {
@@ -54,10 +52,11 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keystorePropertiesFile.exists())
-                signingConfigs.getByName("release")
-            else
-                signingConfigs.getByName("debug") // fallback until keystore is created
+            signingConfig =
+                if (keystorePropertiesFile.exists())
+                    signingConfigs.getByName("release")
+                else
+                    signingConfigs.getByName("debug")
 
             isMinifyEnabled = true
             isShrinkResources = true
@@ -73,8 +72,6 @@ android {
             isShrinkResources = false
         }
     }
-
-
 }
 
 flutter {
@@ -82,7 +79,10 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-    implementation("com.google.android.play:core:1.10.3")
-    implementation("com.google.android.play:core-ktx:1.8.1")
+
+    coreLibraryDesugaring(
+        "com.android.tools:desugar_jdk_libs:2.1.4"
+    )
+
+  
 }

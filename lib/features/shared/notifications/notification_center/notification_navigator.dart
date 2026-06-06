@@ -91,6 +91,7 @@ abstract final class NotificationNavigator {
       if (freshCtx == null) return;
 
       Navigator.push(
+        // ignore: use_build_context_synchronously
         freshCtx,
         MaterialPageRoute(
           builder: (_) => PropertyDetailsView(property: property),

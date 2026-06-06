@@ -1,8 +1,11 @@
-import 'dart:io';
+// lib/features/owner/add_property/data/models/add_property_form_model.dart
+//
+// KEY CHANGE: toInsertMap() now calls _safeSlug() on every slug value before
+// writing to the DB.  This permanently prevents hyphens from being stored,
+// regardless of what the picker hands back.
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AI Price Result — returned by the AI model (mocked until connected)
-// ─────────────────────────────────────────────────────────────────────────────
+import 'dart:io';
+import 'package:aqar_hub/core/location/data/egypt_locations.dart';
 
 enum AiConfidence { low, medium, high }
 
@@ -10,7 +13,7 @@ class AiPriceResult {
   final double suggestedPrice;
   final double? minPrice;
   final double? maxPrice;
-  final String priceLabel; // 'normal' | 'verified' | 'offer' | 'featured'
+  final String priceLabel;
   final AiConfidence confidence;
   final String explanation;
 
@@ -33,13 +36,9 @@ class AiPriceResult {
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Draft rental option (before DB insert — no id yet)
-// ─────────────────────────────────────────────────────────────────────────────
-
 class RentalOptionDraft {
-  final String type; // 'bed' | 'room' | 'apartment'
-  final double price; // price per unit (per bed / per room / per apartment)
+  final String type;
+  final double price;
   final int totalQuantity;
   final int availableQuantity;
 
@@ -71,55 +70,48 @@ class RentalOptionDraft {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Full form state for the Add Property wizard
-// ─────────────────────────────────────────────────────────────────────────────
-
 class AddPropertyFormModel {
-  // Step 0 — Basic Info + Location
   final String title;
-  final String governorateSlug; // mandatory
-  final String citySlug; // mandatory if governorate has cities
-  final String address; // optional free-text
-  final String locationLink; // optional Google Maps URL
 
-  // Step 1 — Property Type
-  final String
-  propertyType; // apartment | villa | studio | penthouse | duplex | chalet
+  /// Canonical slug — underscores only, ALWAYS stored in DB.
+  final String governorateSlug;
 
-  // Step 2 — Specs
+  /// Canonical slug — underscores only, ALWAYS stored in DB.
+  final String citySlug;
+
+  /// Canonical slug — underscores only, ALWAYS stored in DB.
+  final String areaSlug;
+
+  final String address;
+  final String locationLink;
+  final double? latitude;
+  final double? longitude;
+  final String propertyType;
   final int? totalRooms;
   final int? totalBeds;
   final int? bathrooms;
   final double? areaM2;
   final bool isFurnished;
-
-  // Step 3 — Amenities / Features
   final List<String> amenities;
-
-  // Step 4 — Listing Type
-  final String listingType; // rent | sale
-  final String targetAudience; // all | male | female | family
-
-  // Step 5 — Pricing
+  final String listingType;
+  final String targetAudience;
   final double? basePrice;
   final List<RentalOptionDraft> rentalOptions;
-
-  // Step 6 — Media
   final List<File> localImages;
-  final File? localVideo; // optional video file
-  final List<String> uploadedUrls; // set after upload
-
-  // Step 7 — Description + AI  (was Step 6)
+  final File? localVideo;
+  final List<String> uploadedUrls;
   final String description;
-  final AiPriceResult? aiPriceResult; // set after AI check
+  final AiPriceResult? aiPriceResult;
 
   const AddPropertyFormModel({
     this.title = '',
     this.governorateSlug = '',
     this.citySlug = '',
+    this.areaSlug = '',
     this.address = '',
     this.locationLink = '',
+    this.latitude,
+    this.longitude,
     this.propertyType = 'apartment',
     this.totalRooms,
     this.totalBeds,
@@ -145,16 +137,30 @@ class AddPropertyFormModel {
       (locationLink.startsWith('http://') ||
           locationLink.startsWith('https://'));
 
-  /// City display name helper — use EgyptLocations.findCity for full label
-  String get locationKey =>
-      citySlug.isNotEmpty ? '$governorateSlug/$citySlug' : governorateSlug;
+  String get locationKey {
+    if (areaSlug.isNotEmpty) return '$governorateSlug/$citySlug/$areaSlug';
+    if (citySlug.isNotEmpty) return '$governorateSlug/$citySlug';
+    return governorateSlug;
+  }
+
+  // ── Slug sanitizer ────────────────────────────────────────────────────────
+  // Converts hyphens to underscores so DB always receives consistent slugs.
+  // This is a last-resort guard; ideally the Dart location files already use
+  // underscores everywhere.
+  static String _safeSlug(String slug) => slug.replaceAll('-', '_');
+
+  // ── copyWith ──────────────────────────────────────────────────────────────
 
   AddPropertyFormModel copyWith({
     String? title,
     String? governorateSlug,
     String? citySlug,
+    String? areaSlug,
     String? address,
     String? locationLink,
+    double? latitude,
+    double? longitude,
+    bool clearLatLng = false,
     String? propertyType,
     int? totalRooms,
     int? totalBeds,
@@ -175,10 +181,16 @@ class AddPropertyFormModel {
     AiPriceResult? aiPriceResult,
   }) => AddPropertyFormModel(
     title: title ?? this.title,
-    governorateSlug: governorateSlug ?? this.governorateSlug,
-    citySlug: citySlug ?? this.citySlug,
+    // Sanitize slugs at copyWith time so state is always clean
+    governorateSlug: governorateSlug != null
+        ? _safeSlug(governorateSlug)
+        : this.governorateSlug,
+    citySlug: citySlug != null ? _safeSlug(citySlug) : this.citySlug,
+    areaSlug: areaSlug != null ? _safeSlug(areaSlug) : this.areaSlug,
     address: address ?? this.address,
     locationLink: locationLink ?? this.locationLink,
+    latitude: clearLatLng ? null : (latitude ?? this.latitude),
+    longitude: clearLatLng ? null : (longitude ?? this.longitude),
     propertyType: propertyType ?? this.propertyType,
     totalRooms: totalRooms ?? this.totalRooms,
     totalBeds: totalBeds ?? this.totalBeds,
@@ -197,27 +209,43 @@ class AddPropertyFormModel {
     aiPriceResult: aiPriceResult ?? this.aiPriceResult,
   );
 
-  /// Build the DB insert map.
+  // ── DB insert map ─────────────────────────────────────────────────────────
+
   Map<String, dynamic> toInsertMap({
     required String ownerId,
     required List<String> imageUrls,
     String? videoUrl,
   }) {
-    // DB constraint: price_label only accepts normal | verified | offer
-    // 'featured' is a UI concept only — map it to 'verified' for storage
     const validLabels = {'normal', 'verified', 'offer'};
     final rawLabel = aiPriceResult?.priceLabel ?? 'normal';
     final priceLabel = validLabels.contains(rawLabel) ? rawLabel : 'verified';
 
+    // Sanitize at write time — belt-and-suspenders
+    final govSlug = _safeSlug(governorateSlug);
+    final ctSlug = _safeSlug(citySlug);
+    final arSlug = _safeSlug(areaSlug);
+
+    final locationPath = EgyptLocations.buildLocationPath(
+      governorateSlug: govSlug,
+      citySlug: ctSlug.isEmpty ? null : ctSlug,
+      areaSlug: arSlug.isEmpty ? null : arSlug,
+    );
+
+    final cityColumnValue = ctSlug.isNotEmpty ? ctSlug : govSlug;
+
     return {
-      // Snake_case column names (original DB schema)
       'owner_id': ownerId,
       'title': title.trim(),
       'description': description.trim(),
       'address': address.trim(),
-      'city': citySlug.isNotEmpty ? citySlug : governorateSlug,
-      'governorate_slug': governorateSlug.isEmpty ? null : governorateSlug,
-      'city_slug': citySlug.isEmpty ? null : citySlug,
+
+      // ── Location slugs — always underscores, never hyphens, never display names
+      'governorate_slug': govSlug.isEmpty ? null : govSlug,
+      'city_slug': ctSlug.isEmpty ? null : ctSlug,
+      'area_slug': arSlug.isEmpty ? null : arSlug,
+      'city': cityColumnValue,
+      'location_path': locationPath.isEmpty ? null : locationPath,
+
       'total_rooms': totalRooms,
       'total_beds': totalBeds,
       'bathrooms': bathrooms,
@@ -232,10 +260,10 @@ class AddPropertyFormModel {
       'image_urls': imageUrls,
       if (amenities.isNotEmpty) 'amenities': amenities,
       if (videoUrl != null && videoUrl.isNotEmpty) 'video_url': videoUrl,
-      if (videoUrl != null && videoUrl.isNotEmpty) 'videourl': videoUrl,
       if (locationLink.isNotEmpty && hasLocationLink)
         'location_link': locationLink,
-      // AI fields
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
       if (aiPriceResult != null) ...aiPriceResult!.toMap(),
     };
   }

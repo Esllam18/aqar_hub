@@ -1,3 +1,8 @@
+// lib/features/owner/add_property/data/repositories/add_property_repository_impl.dart
+//
+// No structural changes.  The slug-correctness guarantee is enforced in
+// [AddPropertyFormModel.toInsertMap()], so this layer stays clean.
+
 import 'package:aqar_hub/features/owner/add_property/data/datasources/add_property_remote_datasource.dart';
 import 'package:aqar_hub/features/owner/add_property/data/models/add_property_form_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -5,16 +10,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AddPropertyRepositoryImpl {
   final AddPropertyRemoteDatasource _datasource;
   final SupabaseClient _supabase = Supabase.instance.client;
+
   AddPropertyRepositoryImpl(this._datasource);
 
-  /// Uploads media, inserts property, inserts rental options.
+  /// Uploads media, inserts property row, inserts rental options.
   /// Returns the new property id.
   Future<String> addProperty(AddPropertyFormModel form) async {
-    final supabase = await _getOwnerId();
+    final ownerId = await _getOwnerId();
 
-    // 1. Upload images (required)
+    // 1. Upload images
     final imageUrls = await _datasource.uploadImages(
-      ownerId: supabase,
+      ownerId: ownerId,
       files: form.localImages,
     );
 
@@ -22,14 +28,14 @@ class AddPropertyRepositoryImpl {
     String? videoUrl;
     if (form.localVideo != null) {
       videoUrl = await _datasource.uploadVideo(
-        ownerId: supabase,
+        ownerId: ownerId,
         file: form.localVideo!,
       );
     }
 
-    // 3. Build insert map (AI result merged inside toInsertMap)
+    // 3. Build insert map — all location columns will be slugs, never display names.
     final data = form.toInsertMap(
-      ownerId: supabase,
+      ownerId: ownerId,
       imageUrls: imageUrls,
       videoUrl: videoUrl,
     );
@@ -39,9 +45,8 @@ class AddPropertyRepositoryImpl {
 
     // 5. Insert rental options (rent only)
     if (form.isRent && form.rentalOptions.isNotEmpty) {
-      final options = form.rentalOptions
-          .map((o) => o.toMap(propertyId))
-          .toList();
+      final options =
+          form.rentalOptions.map((o) => o.toMap(propertyId)).toList();
       await _datasource.insertRentalOptions(options);
     }
 
@@ -54,13 +59,3 @@ class AddPropertyRepositoryImpl {
     return user.id;
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NOTE: expose _supabase for _getOwnerId — alternatively pass ownerId in
-// through the form. If you want to avoid accessing the private field,
-// replace _getOwnerId() with:
-//
-//   final ownerId = Supabase.instance.client.auth.currentUser?.id ?? '';
-//
-// directly in addProperty().
-// ─────────────────────────────────────────────────────────────────────────────

@@ -1,6 +1,4 @@
 // lib/features/house_seeker/home/presentation/views/property_details/details_gallery.dart
-//
-// Auto-sliding image gallery (SliverAppBar) + fullscreen viewer.
 
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -24,8 +22,10 @@ class DetailsGallerySliver extends StatefulWidget {
 
 class _DetailsGallerySliverState extends State<DetailsGallerySliver> {
   late final PageController _ctrl;
-  Timer? _timer;
+  Timer? _autoTimer;
+  Timer? _cooldownTimer;
   int _current = 0;
+  bool _isDragging = false;
 
   List<String> get _images =>
       widget.imageUrls.where((u) => u.trim().isNotEmpty).toList();
@@ -34,25 +34,42 @@ class _DetailsGallerySliverState extends State<DetailsGallerySliver> {
   void initState() {
     super.initState();
     _ctrl = PageController();
-    _startTimer();
+    _scheduleAutoSlide();
   }
 
-  void _startTimer() {
-    _timer?.cancel();
+  void _scheduleAutoSlide() {
+    _autoTimer?.cancel();
     if (_images.length < 2) return;
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!_ctrl.hasClients) return;
+    _autoTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (_isDragging || !_ctrl.hasClients) return;
+      final next = (_current + 1) % _images.length;
       _ctrl.animateToPage(
-        (_current + 1) % _images.length,
+        next,
         duration: const Duration(milliseconds: 450),
         curve: Curves.easeInOut,
       );
     });
   }
 
+  void _onDragStart() {
+    _isDragging = true;
+    _cooldownTimer?.cancel();
+  }
+
+  void _onDragEnd() {
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        _isDragging = false;
+        _scheduleAutoSlide();
+      }
+    });
+  }
+
   @override
   void dispose() {
-    _timer?.cancel();
+    _autoTimer?.cancel();
+    _cooldownTimer?.cancel();
     _ctrl.dispose();
     super.dispose();
   }
@@ -68,6 +85,7 @@ class _DetailsGallerySliverState extends State<DetailsGallerySliver> {
   @override
   Widget build(BuildContext context) {
     final images = _images;
+
     return SliverAppBar(
       expandedHeight: context.r(320),
       pinned: false,
@@ -81,43 +99,53 @@ class _DetailsGallerySliverState extends State<DetailsGallerySliver> {
           fit: StackFit.expand,
           children: [
             if (images.isNotEmpty)
-              GestureDetector(
-                onTap: () => _openFullscreen(_current),
-                child: PageView.builder(
-                  controller: _ctrl,
-                  itemCount: images.length,
-                  onPageChanged: (i) {
-                    setState(() => _current = i);
-                    _startTimer();
-                  },
-                  itemBuilder: (_, i) => CachedNetworkImage(
-                    imageUrl: images[i],
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) =>
-                        Container(color: Colors.grey.shade300),
-                    errorWidget: (_, __, ___) =>
-                        Container(color: Colors.grey.shade300),
+              Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) => _onDragStart(),
+                onPointerUp: (_) => _onDragEnd(),
+                onPointerCancel: (_) => _onDragEnd(),
+                child: GestureDetector(
+                  onTap: () => _openFullscreen(_current),
+                  child: PageView.builder(
+                    controller: _ctrl,
+                    physics: const ClampingScrollPhysics(),
+                    itemCount: images.length,
+                    onPageChanged: (i) {
+                      if (mounted) setState(() => _current = i);
+                    },
+                    itemBuilder: (_, i) => CachedNetworkImage(
+                      imageUrl: images[i],
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) =>
+                          Container(color: Colors.grey.shade300),
+                      errorWidget: (_, __, ___) =>
+                          Container(color: Colors.grey.shade300),
+                    ),
                   ),
                 ),
               )
             else
               Container(color: Colors.grey.shade300),
+
             // Gradient overlay
             Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.45),
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.42),
-                    ],
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.45),
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.42),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
+
             // Back button
             Positioned(
               top: MediaQuery.paddingOf(context).top + context.r(12),
@@ -127,6 +155,7 @@ class _DetailsGallerySliverState extends State<DetailsGallerySliver> {
                 onTap: widget.onBack,
               ),
             ),
+
             // Fullscreen button
             if (images.isNotEmpty)
               Positioned(
@@ -137,51 +166,58 @@ class _DetailsGallerySliverState extends State<DetailsGallerySliver> {
                   onTap: () => _openFullscreen(_current),
                 ),
               ),
+
             // Counter badge
             if (images.length > 1)
               Positioned(
                 top: MediaQuery.paddingOf(context).top + context.r(12),
                 left: context.r(62),
-                child: Container(
-                  padding: context.rSymmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(context.r(20)),
-                  ),
-                  child: Text(
-                    '${_current + 1} / ${images.length}',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: context.sp(11),
-                      fontWeight: FontWeight.w700,
+                child: IgnorePointer(
+                  child: Container(
+                    padding: context.rSymmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(context.r(20)),
+                    ),
+                    child: Text(
+                      '${_current + 1} / ${images.length}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: context.sp(11),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
               ),
+
             // Dot indicators
             if (images.length > 1)
               Positioned(
                 bottom: context.r(18),
                 left: 0,
                 right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(images.length, (i) {
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      margin: context.rSymmetric(horizontal: 3),
-                      width: _current == i ? context.r(18) : context.r(6),
-                      height: context.r(6),
-                      decoration: BoxDecoration(
-                        color: _current == i
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(context.r(6)),
-                      ),
-                    );
-                  }),
+                child: IgnorePointer(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(images.length, (i) {
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        margin: context.rSymmetric(horizontal: 3),
+                        width: _current == i ? context.r(18) : context.r(6),
+                        height: context.r(6),
+                        decoration: BoxDecoration(
+                          color: _current == i
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(context.r(6)),
+                        ),
+                      );
+                    }),
+                  ),
                 ),
               ),
+
             // Thumbnail strip
             if (images.length > 1)
               Positioned(
@@ -195,11 +231,16 @@ class _DetailsGallerySliverState extends State<DetailsGallerySliver> {
                     padding: context.rSymmetric(horizontal: 12),
                     itemCount: images.length,
                     itemBuilder: (_, i) => GestureDetector(
-                      onTap: () => _ctrl.animateToPage(
-                        i,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      ),
+                      onTap: () {
+                        _onDragStart();
+                        _ctrl
+                            .animateToPage(
+                              i,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            )
+                            .then((_) => _onDragEnd());
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         margin: context.rOnly(right: 6),

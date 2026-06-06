@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';

@@ -20,6 +20,7 @@ import '../widgets/property_details/details_action_buttons.dart';
 import '../widgets/property_details/details_info_row.dart';
 import '../widgets/property_details/details_rental_options.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
+import 'package:aqar_hub/core/location/helper/location_display_helper.dart';
 
 class PropertyDetailsView extends StatefulWidget {
   final PropertyModel property;
@@ -223,14 +224,18 @@ class _PropertyDetailsViewState extends State<PropertyDetailsView> {
                             duration: const Duration(milliseconds: 350),
                             delay: const Duration(milliseconds: 130),
                             child: DetailsLocationCard(
+                              latitude: p.latitude,
+                              longitude: p.longitude,
                               address: p.address.isNotEmpty ? p.address : null,
-                              city: p.city.isNotEmpty ? p.city : null,
-                              onOpen: () => _openMap(
-                                p.latitude,
-                                p.longitude,
-                                p.title,
-                                locationLink: p.locationLink,
+                              city: LocationDisplayHelper.locationLabel(
+                                context: context,
+                                governorateSlug: p.governorateSlug,
+                                citySlug: p.citySlug,
+                                areaSlug: p.areaSlug,
                               ),
+                              locationLink: p.locationLink.isNotEmpty
+                                  ? p.locationLink
+                                  : null,
                             ),
                           ),
                         ],

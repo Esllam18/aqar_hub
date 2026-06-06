@@ -116,19 +116,13 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
   @override
   Widget build(BuildContext context) {
     // Respect the app's current directionality instead of hardcoding RTL
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            isRtl
-                ? Icons.arrow_forward_ios_rounded
-                : Icons.arrow_back_ios_rounded,
-            color: Colors.white,
-          ),
+        leading: const IconButton(
+          icon: Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
           onPressed: Navigation.back,
         ),
         title: Text(

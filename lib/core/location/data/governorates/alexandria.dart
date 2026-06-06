@@ -5,19 +5,19 @@ const EgyptLocationNode alexandriaGovernorate = EgyptLocationNode(
   slug: 'alexandria',
   enName: 'Alexandria',
   arName: 'الإسكندرية',
-  aliases: ['alexandria', 'الإسكندرية', 'الاسكندرية', 'اسكندرية', 'إسكندرية'],
+  aliases: ['alexandria', 'الإسكندرية', 'الاسكندريه', 'alex'],
   children: [
     EgyptLocationNode(
-      slug: 'sidi-gaber',
+      slug: 'sidi_gaber',
       enName: 'Sidi Gaber',
       arName: 'سيدي جابر',
-      aliases: ['sidi gaber', 'سيدي جابر'],
+      aliases: ['sidi gaber', 'سيدي جابر', 'sidi-gaber'],
     ),
     EgyptLocationNode(
       slug: 'smouha',
       enName: 'Smouha',
       arName: 'سموحة',
-      aliases: ['smouha', 'سموحة', 'سموحه'],
+      aliases: ['smouha', 'سموحة'],
     ),
     EgyptLocationNode(
       slug: 'montaza',
@@ -44,10 +44,10 @@ const EgyptLocationNode alexandriaGovernorate = EgyptLocationNode(
       aliases: ['lauran', 'لوران'],
     ),
     EgyptLocationNode(
-      slug: 'sidi-bishr',
+      slug: 'sidi_bishr',
       enName: 'Sidi Bishr',
       arName: 'سيدي بشر',
-      aliases: ['sidi bishr', 'سيدي بشر'],
+      aliases: ['sidi bishr', 'سيدي بشر', 'sidi-bishr'],
     ),
     EgyptLocationNode(
       slug: 'miami',
@@ -68,10 +68,10 @@ const EgyptLocationNode alexandriaGovernorate = EgyptLocationNode(
       aliases: ['gleem', 'جليم'],
     ),
     EgyptLocationNode(
-      slug: 'moharam-bek',
+      slug: 'moharam_bek',
       enName: 'Moharam Bek',
       arName: 'محرم بك',
-      aliases: ['moharam bek', 'محرم بك'],
+      aliases: ['moharam bek', 'محرم بك', 'moharam-bek'],
     ),
     EgyptLocationNode(
       slug: 'mansheya',
@@ -80,10 +80,10 @@ const EgyptLocationNode alexandriaGovernorate = EgyptLocationNode(
       aliases: ['mansheya', 'المنشية'],
     ),
     EgyptLocationNode(
-      slug: 'borg-arab',
+      slug: 'borg_arab',
       enName: 'Borg El Arab',
       arName: 'برج العرب',
-      aliases: ['borg el arab', 'برج العرب', 'borg arab'],
+      aliases: ['borg arab', 'برج العرب', 'borg-arab'],
     ),
   ],
 );

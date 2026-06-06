@@ -3,9 +3,15 @@ import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/navigation/navigation.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
-import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/about_app/buid_info_card.dart';
-import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/about_app/info_card.dart';
-import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/about_app/stats_row.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/views/contact_us_view.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/views/help_center_view.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/shared/help_section_label.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/about_app/about_build_info_card.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/about_app/about_developer_card.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/about_app/about_info_card.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/about_app/about_shortcut_card.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/about_app/about_stats_row.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/about_app/about_tech_stack_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,11 +42,11 @@ class _AboutViewState extends State<AboutView> {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── Gradient SliverAppBar ──────────────────────────────────
+          // ── Gradient SliverAppBar ────────────────────────────────────
           SliverAppBar(
-            expandedHeight: context.r(200),
+            expandedHeight: context.r(220),
             pinned: true,
-            backgroundColor: AppColors.primary,
+            backgroundColor: const Color(0xFF1B4B8C),
             leading: IconButton(
               icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
@@ -53,7 +59,7 @@ class _AboutViewState extends State<AboutView> {
               background: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF1B4B8C), Color(0xFF42A5F5)],
+                    colors: [Color(0xFF1B4B8C), Color(0xFF26A69A)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -62,18 +68,26 @@ class _AboutViewState extends State<AboutView> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(height: context.r(20)),
+                      SizedBox(height: context.r(24)),
+                      // Logo ring with subtle shimmer border
                       Container(
-                        width: context.r(72),
-                        height: context.r(72),
-                        padding: context.rAll(16),
+                        width: context.r(80),
+                        height: context.r(80),
+                        padding: context.rAll(18),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: Colors.white.withValues(alpha: 0.30),
                             width: 2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
                         child: SvgPicture.asset(
                           AppImages.logo,
@@ -83,33 +97,30 @@ class _AboutViewState extends State<AboutView> {
                           ),
                         ),
                       ),
-                      SizedBox(height: context.r(10)),
+                      SizedBox(height: context.r(12)),
                       Text(
                         'app_name'.tr(context),
                         style: GoogleFonts.cairo(
-                          fontSize: context.sp(20),
+                          fontSize: context.sp(22),
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
+                          letterSpacing: 0.3,
                         ),
                       ),
-                      Container(
-                        margin: context.rOnly(top: 4),
-                        padding: context.rSymmetric(
-                          horizontal: 12,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(context.r(20)),
-                        ),
-                        child: Text(
-                          'v$_version',
-                          style: GoogleFonts.tajawal(
-                            fontSize: context.sp(12),
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                      SizedBox(height: context.r(6)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _HeaderChip(
+                            icon: Icons.tag_rounded,
+                            label: 'v$_version',
                           ),
-                        ),
+                          SizedBox(width: context.r(8)),
+                          const _HeaderChip(
+                            icon: Icons.smartphone_rounded,
+                            label: 'Android & iOS',
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -125,38 +136,121 @@ class _AboutViewState extends State<AboutView> {
                 SizedBox(height: context.r(4)),
 
                 // ── Stats row ──────────────────────────────────────────
-                const StatsRow(),
-                SizedBox(height: context.r(20)),
+                const AboutStatsRow(),
+                SizedBox(height: context.r(24)),
 
-                // ── Info cards ─────────────────────────────────────────
-                const InfoCard(
+                // ── App info section ───────────────────────────────────
+                HelpSectionLabel(label: 'about_section_info'.tr(context)),
+                SizedBox(height: context.r(12)),
+                const AboutInfoCard(
                   icon: Icons.info_outline_rounded,
                   gradient: [Color(0xFF6A1B9A), Color(0xFF7E57C2)],
                   titleKey: 'about_desc_title',
                   bodyKey: 'about_desc_body',
                 ),
                 SizedBox(height: context.r(10)),
-                const InfoCard(
+                const AboutInfoCard(
                   icon: Icons.verified_rounded,
                   gradient: [Color(0xFF1B5E20), Color(0xFF43A047)],
                   titleKey: 'about_mission_title',
                   bodyKey: 'about_mission_body',
                 ),
                 SizedBox(height: context.r(10)),
-                const InfoCard(
+                const AboutInfoCard(
                   icon: Icons.shield_outlined,
                   gradient: [Color(0xFF0277BD), Color(0xFF039BE5)],
                   titleKey: 'about_privacy_title',
                   bodyKey: 'about_privacy_body',
                 ),
 
-                SizedBox(height: context.r(20)),
+                SizedBox(height: context.r(24)),
 
-                // ── Version & build info ───────────────────────────────
-                BuildInfoCard(version: _version),
+                // ── Tech stack ─────────────────────────────────────────
+                HelpSectionLabel(label: 'about_section_tech'.tr(context)),
+                SizedBox(height: context.r(12)),
+                const AboutTechStackCard(),
 
-                SizedBox(height: context.r(80)),
+                SizedBox(height: context.r(24)),
+
+                // ── Developer card ─────────────────────────────────────
+                HelpSectionLabel(label: 'about_section_team'.tr(context)),
+                SizedBox(height: context.r(12)),
+                const AboutDeveloperCard(),
+
+                SizedBox(height: context.r(24)),
+
+                // ── Shortcut cards (Help & Contact) ────────────────────
+                HelpSectionLabel(label: 'about_section_support'.tr(context)),
+                SizedBox(height: context.r(12)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AboutShortcutCard(
+                        icon: Icons.help_outline_rounded,
+                        gradient: const [Color(0xFF1B4B8C), Color(0xFF26A69A)],
+                        titleKey: 'about_shortcut_help_title',
+                        subtitleKey: 'about_shortcut_help_sub',
+                        onTap: () => Navigation.to(const HelpCenterView()),
+                      ),
+                    ),
+                    SizedBox(width: context.r(12)),
+                    Expanded(
+                      child: AboutShortcutCard(
+                        icon: Icons.headset_mic_rounded,
+                        gradient: const [Color(0xFF0277BD), Color(0xFF039BE5)],
+                        titleKey: 'about_shortcut_contact_title',
+                        subtitleKey: 'about_shortcut_contact_sub',
+                        onTap: () => Navigation.to(const ContactUsView()),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: context.r(24)),
+
+                // ── Build info ─────────────────────────────────────────
+                HelpSectionLabel(label: 'about_section_build'.tr(context)),
+                SizedBox(height: context.r(12)),
+                AboutBuildInfoCard(version: _version),
+
+                SizedBox(height: context.r(100)),
               ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Small chip in the app bar header ──────────────────────────────────────────
+
+class _HeaderChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _HeaderChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: context.rSymmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(context.r(20)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: context.r(11)),
+          SizedBox(width: context.r(4)),
+          Text(
+            label,
+            style: GoogleFonts.tajawal(
+              fontSize: context.sp(11),
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

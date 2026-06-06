@@ -7,6 +7,14 @@ class AppImages {
       'assets/lottiefiles/Apartment.json';
   static const String onboardingImageFour = 'assets/lottiefiles/Building.json';
   static const String onboardingImageFive = 'assets/lottiefiles/City.json';
+  static const String devImage = 'assets/images/image_dev.png';
+  static const String linkedIn = 'assets/icons/LinkedIn_icon.png';
+  static const String github = 'assets/icons/github_logo_icon.webp';
+  static const String email = 'assets/icons/gmail.webp';
+  static const String whatsapp = 'assets/icons/WhatsApp_icon.png';
+  static const String telegram = 'assets/icons/Telegram_logo.png';
+  static const String instagram = 'assets/icons/Instagram_icon.png';
+  static const String phone = 'assets/icons/phone.jpg';
 }
 
 abstract final class AppLottie {

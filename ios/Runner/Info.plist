@@ -26,6 +26,11 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Location permissions — required by geolocator for in-app map picker -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>AqarHub uses your location to help you pin the exact property location on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>AqarHub uses your location to help you pin the exact property location on the map.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

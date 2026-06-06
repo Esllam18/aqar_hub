@@ -9,6 +9,9 @@
     <!-- Image picker: camera + media access (Android 13+) -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <!-- Location — required by geolocator for in-app map picker -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
         android:label="AqarHub"
@@ -58,6 +61,37 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+            <!-- Phone calls -->
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+ 
+    <!-- Email -->
+       <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+ 
+    <!-- WhatsApp -->
+        <package android:name="com.whatsapp" />
+ 
+    <!-- Telegram -->
+        <package android:name="org.telegram.messenger" />
+ 
+    <!-- Instagram -->
+        <package android:name="com.instagram.android" />
+ 
+    <!-- Generic https links (LinkedIn, GitHub, fallback browser) -->
+        <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" />
+        </intent>
+ 
+        <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="http" />
         </intent>
     </queries>
 </manifest>

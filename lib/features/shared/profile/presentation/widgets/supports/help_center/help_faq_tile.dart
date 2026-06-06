@@ -4,20 +4,23 @@ import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class FaqTile extends StatefulWidget {
+/// An animated expand/collapse FAQ tile with smooth rotation arrow.
+class HelpFaqTile extends StatefulWidget {
   final String questionKey;
   final String answerKey;
-  const FaqTile({
+
+  const HelpFaqTile({
     super.key,
     required this.questionKey,
     required this.answerKey,
   });
 
   @override
-  State<FaqTile> createState() => _FaqTileState();
+  State<HelpFaqTile> createState() => _HelpFaqTileState();
 }
 
-class _FaqTileState extends State<FaqTile> with SingleTickerProviderStateMixin {
+class _HelpFaqTileState extends State<HelpFaqTile>
+    with SingleTickerProviderStateMixin {
   bool _open = false;
   late final AnimationController _ctrl;
   late final Animation<double> _rotate;
@@ -27,12 +30,11 @@ class _FaqTileState extends State<FaqTile> with SingleTickerProviderStateMixin {
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 240),
     );
-    _rotate = Tween(
-      begin: 0.0,
-      end: 0.5,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _rotate = Tween<double>(begin: 0.0, end: 0.5).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -51,7 +53,7 @@ class _FaqTileState extends State<FaqTile> with SingleTickerProviderStateMixin {
     return GestureDetector(
       onTap: _toggle,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: const Duration(milliseconds: 240),
         margin: context.rOnly(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -60,6 +62,7 @@ class _FaqTileState extends State<FaqTile> with SingleTickerProviderStateMixin {
             color: _open
                 ? AppColors.primary.withValues(alpha: 0.35)
                 : Colors.transparent,
+            width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
@@ -77,18 +80,19 @@ class _FaqTileState extends State<FaqTile> with SingleTickerProviderStateMixin {
               padding: context.rAll(14),
               child: Row(
                 children: [
-                  Container(
-                    width: context.r(32),
-                    height: context.r(32),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 240),
+                    width: context.r(34),
+                    height: context.r(34),
                     decoration: BoxDecoration(
                       color: _open
-                          ? AppColors.primary.withValues(alpha: 0.1)
+                          ? AppColors.primary.withValues(alpha: 0.10)
                           : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(context.r(9)),
+                      borderRadius: BorderRadius.circular(context.r(10)),
                     ),
                     child: Icon(
                       Icons.help_outline_rounded,
-                      size: context.r(16),
+                      size: context.r(17),
                       color: _open ? AppColors.primary : Colors.grey.shade400,
                     ),
                   ),
@@ -97,9 +101,11 @@ class _FaqTileState extends State<FaqTile> with SingleTickerProviderStateMixin {
                     child: Text(
                       widget.questionKey.tr(context),
                       style: GoogleFonts.cairo(
-                        fontSize: context.sp(13),
+                        fontSize: context.sp(13.5),
                         fontWeight: FontWeight.w700,
-                        color: _open ? AppColors.primary : Colors.grey.shade800,
+                        color: _open
+                            ? AppColors.primary
+                            : const Color(0xFF1B2D5E),
                       ),
                     ),
                   ),
@@ -117,20 +123,19 @@ class _FaqTileState extends State<FaqTile> with SingleTickerProviderStateMixin {
             AnimatedCrossFade(
               firstChild: const SizedBox.shrink(),
               secondChild: Padding(
-                padding: context.rOnly(left: 58, right: 14, bottom: 14),
+                padding: context.rOnly(left: 60, right: 14, bottom: 16),
                 child: Text(
                   widget.answerKey.tr(context),
                   style: GoogleFonts.tajawal(
                     fontSize: context.sp(13),
                     color: Colors.grey.shade600,
-                    height: 1.7,
+                    height: 1.75,
                   ),
                 ),
               ),
-              crossFadeState: _open
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 220),
+              crossFadeState:
+                  _open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 240),
             ),
           ],
         ),

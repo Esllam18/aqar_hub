@@ -1,3 +1,11 @@
+// lib/features/owner/analytics/presentation/cubit/owner_analytics_cubit.dart
+//
+// FIX: byCity now keyed by "{governorate_slug}/{city_slug}" (canonical slugs)
+//      instead of the raw 'city' column which could be Arabic, English, or a
+//      slug depending on when the property was created.
+//      The view resolves the key to a localised display name via
+//      EgyptLocationHelper.
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,8 +18,6 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
 
   String? get _uid => _supabase.auth.currentUser?.id;
 
-  // Month names removed — use intl in view
-
   Future<void> load() async {
     final uid = _uid;
     if (uid == null) {
@@ -22,7 +28,6 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
     emit(const OwnerAnalyticsLoading());
 
     try {
-      // Fetch all owner properties with rental options
       final raw = await _supabase
           .from('properties')
           .select('*, rental_options(*)')
@@ -31,7 +36,6 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
 
       final rows = List<Map<String, dynamic>>.from(raw as List);
 
-      // ── Aggregate ────────────────────────────────────────────────────────
       int rentCount = 0;
       int saleCount = 0;
       int rentedCount = 0;
@@ -40,14 +44,16 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
       double saleValue = 0;
 
       final byType = <String, int>{};
+
+      // ── FIX: key = "{gov_slug}/{city_slug}" — both are canonical slugs.
+      // Falls back to legacy 'city' column value only when slug columns are empty.
       final byCity = <String, int>{};
+
       final byRentalType = <String, int>{};
       int furnished = 0;
       int unfurnished = 0;
 
-      // Group by month (last 6 months relative to newest listing)
       final now = DateTime.now();
-      // Build a list of the last 6 calendar months
       final months = List.generate(6, (i) {
         final dt = DateTime(now.year, now.month - (5 - i), 1);
         return MonthlyCount(
@@ -63,7 +69,22 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
         final isRented = row['is_rented'] == true;
         final isFurnishedProp = row['is_furnished'] == true;
         final propertyType = (row['property_type'] as String? ?? 'apartment');
-        final city = (row['city'] as String? ?? '').trim();
+
+        // ── FIX: prefer slug columns, fallback to legacy 'city' column ────
+        final govSlug = (row['governorate_slug'] as String? ?? '').trim();
+        final citySlug = (row['city_slug'] as String? ?? '').trim();
+        final legacyCity = (row['city'] as String? ?? '').trim();
+
+        // Build a stable location key for the city breakdown map.
+        // Format: "{gov}/{city}" when both slugs exist, otherwise legacy value.
+        final locationKey = govSlug.isNotEmpty && citySlug.isNotEmpty
+            ? '$govSlug/$citySlug'
+            : citySlug.isNotEmpty
+            ? citySlug
+            : govSlug.isNotEmpty
+            ? govSlug
+            : legacyCity;
+
         final basePrice = (row['base_price'] as num?)?.toDouble() ?? 0.0;
         final createdAtStr = row['created_at'] as String? ?? '';
         final createdAt = DateTime.tryParse(createdAtStr) ?? now;
@@ -79,22 +100,18 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
         if (isRented) rentedCount++;
         portfolioValue += basePrice;
 
-        // Property type breakdown
         byType[propertyType] = (byType[propertyType] ?? 0) + 1;
 
-        // City breakdown
-        if (city.isNotEmpty) {
-          byCity[city] = (byCity[city] ?? 0) + 1;
+        if (locationKey.isNotEmpty) {
+          byCity[locationKey] = (byCity[locationKey] ?? 0) + 1;
         }
 
-        // Furnished
         if (isFurnishedProp) {
           furnished++;
         } else {
           unfurnished++;
         }
 
-        // Rental options breakdown
         final rentalOptions = row['rental_options'] as List? ?? [];
         for (final opt in rentalOptions) {
           final optType =
@@ -104,7 +121,6 @@ class OwnerAnalyticsCubit extends Cubit<OwnerAnalyticsState> {
           }
         }
 
-        // Monthly count (last 6 months only)
         for (var i = 0; i < months.length; i++) {
           if (months[i].year == createdAt.year &&
               months[i].month == createdAt.month) {

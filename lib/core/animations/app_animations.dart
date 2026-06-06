@@ -39,11 +39,8 @@ abstract final class AppAnimations {
       duration: _totalDuration(delay, duration),
       curve: _delayCurve(delay, duration, curve),
       child: child,
-      builder: (_, value, child) => Opacity(
-        // ✅ KEY FIX: clamp prevents assertion error from overshooting curves
-        opacity: value.clamp(0.0, 1.0),
-        child: child,
-      ),
+      builder: (_, value, child) =>
+          Opacity(opacity: value.clamp(0.0, 1.0), child: child),
     );
   }
 
@@ -131,9 +128,6 @@ abstract final class AppAnimations {
 
   // ── 5. Size (reveal) ───────────────────────────────────────────────────────
 
-  /// AppAnimations.size(child: myWidget, duration: Duration(milliseconds: 500))
-  /// ✅ FIX: value is clamped before being used as heightFactor/widthFactor
-  /// to prevent the 99327px overflow caused by elasticOut overshoot.
   static Widget size({
     required Widget child,
     required Duration duration,
@@ -150,7 +144,6 @@ abstract final class AppAnimations {
       builder: (_, value, child) => ClipRect(
         child: Align(
           alignment: Alignment.center,
-          // ✅ KEY FIX: clamp to [0,1] — layout factors cannot be > 1
           heightFactor: axis == Axis.vertical ? value.clamp(0.0, 1.0) : 1.0,
           widthFactor: axis == Axis.horizontal ? value.clamp(0.0, 1.0) : 1.0,
           child: child,
@@ -161,8 +154,6 @@ abstract final class AppAnimations {
 
   // ── 6. Combined ────────────────────────────────────────────────────────────
 
-  /// Composes two animations together.
-  /// AppAnimations.combined(type: CombineType.fadeSlide, child: ..., duration: ...)
   static Widget combined({
     required Widget child,
     required Duration duration,

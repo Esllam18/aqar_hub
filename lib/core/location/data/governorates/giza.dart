@@ -20,17 +20,31 @@ const EgyptLocationNode gizaGovernorate = EgyptLocationNode(
       aliases: ['mohandessin', 'المهندسين', 'مهندسين'],
     ),
     EgyptLocationNode(
-      slug: 'sixth-of-october',
+      slug: 'sixth_of_october',
       enName: '6th of October',
       arName: 'السادس من أكتوبر',
       aliases: ['6 october', '6th of october', '٦ اكتوبر', '6 أكتوبر',
-                'أكتوبر', 'october city', 'سادس اكتوبر'],
+                'أكتوبر', 'october city', 'سادس اكتوبر', 'sixth-of-october'],
     ),
     EgyptLocationNode(
-      slug: 'sheikh-zayed',
+      slug: 'sheikh_zayed',
       enName: 'Sheikh Zayed',
       arName: 'الشيخ زايد',
-      aliases: ['sheikh zayed', 'الشيخ زايد', 'زايد', 'شيخ زايد'],
+      aliases: ['sheikh zayed', 'الشيخ زايد', 'زايد', 'شيخ زايد', 'sheikh-zayed'],
+      children: [
+        EgyptLocationNode(
+          slug: 'zayed_1',
+          enName: 'Zayed 1',
+          arName: 'زايد 1',
+          aliases: ['zayed 1', 'زايد 1', 'zayed-1'],
+        ),
+        EgyptLocationNode(
+          slug: 'zayed_2',
+          enName: 'Zayed 2',
+          arName: 'زايد 2',
+          aliases: ['zayed 2', 'زايد 2'],
+        ),
+      ],
     ),
     EgyptLocationNode(
       slug: 'haram',
@@ -51,10 +65,10 @@ const EgyptLocationNode gizaGovernorate = EgyptLocationNode(
       aliases: ['agouza', 'العجوزة', 'العجوزه'],
     ),
     EgyptLocationNode(
-      slug: 'giza-city',
+      slug: 'giza_city',
       enName: 'Giza City',
       arName: 'مدينة الجيزة',
-      aliases: ['giza city', 'مدينة الجيزة', 'وسط الجيزة'],
+      aliases: ['giza city', 'مدينة الجيزة', 'وسط الجيزة', 'giza-city'],
     ),
     EgyptLocationNode(
       slug: 'faisal',

@@ -5,7 +5,7 @@ const EgyptLocationNode newValleyGovernorate = EgyptLocationNode(
   slug: 'new_valley',
   enName: 'New Valley',
   arName: 'الوادي الجديد',
-  aliases: ['new valley', 'الوادي الجديد', 'new_valley'],
+  aliases: ['new valley', 'الوادي الجديد', 'الوادى الجديد', 'wadi gedid'],
   children: [
     EgyptLocationNode(slug: 'kharga', enName: 'Kharga', arName: 'الخارجة', aliases: ['kharga', 'الخارجة']),
     EgyptLocationNode(slug: 'dakhla', enName: 'Dakhla', arName: 'الداخلة', aliases: ['dakhla', 'الداخلة']),

@@ -1,14 +1,31 @@
+// ignore_for_file: unused_element
+
 import 'package:aqar_hub/core/constants/app_colors.dart';
+import 'package:aqar_hub/core/enums/app_role.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/navigation/navigation.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
+import 'package:aqar_hub/features/shared/profile/data/models/help_content.dart';
+import 'package:aqar_hub/features/shared/profile/data/models/help_topic_model.dart';
+
+import 'package:aqar_hub/features/shared/profile/presentation/views/contact_us_view.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/views/help_faq_list_view.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/views/help_guide_detail_view.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/help_center/help_category_card.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/help_center/help_faq_tile.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/shared/help_gradient_app_bar.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/shared/help_quick_contact_btn.dart';
+import 'package:aqar_hub/features/shared/profile/presentation/widgets/supports/shared/help_section_label.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HelpCenterView extends StatelessWidget {
-  const HelpCenterView({super.key});
+  final AppRole role;
 
+  const HelpCenterView({super.key, this.role = AppRole.seeker});
+
+  // ── Contact constants ──────────────────────────────────────────────────────
   static const _phone = '01155374945';
   static const _email = 'esllam.maherr@gmail.com';
 
@@ -19,78 +36,41 @@ class HelpCenterView extends StatelessWidget {
     }
   }
 
+  HelpAudience get _audience =>
+      role == AppRole.owner ? HelpAudience.owner : HelpAudience.seeker;
+
+  List<({String key, HelpGuide guide})> get _popularFaqs {
+    // Show 3 most relevant FAQs on the home screen
+    return HelpContent.allFaqs
+        .where((f) => f.audience == HelpAudience.all || f.audience == _audience)
+        .take(3)
+        .map((f) => (key: f.questionKey, guide: HelpContent.gettingStarted))
+        .toList();
+  }
+
+  List<FaqItem> get _previewFaqs => HelpContent.allFaqs
+      .where((f) => f.audience == HelpAudience.all || f.audience == _audience)
+      .take(3)
+      .toList();
+
   @override
   Widget build(BuildContext context) {
+    final categories = role == AppRole.owner
+        ? HelpContent.ownerCategories
+        : HelpContent.seekerCategories;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── Gradient SliverAppBar ─────────────────────────────────
-          SliverAppBar(
-            expandedHeight: context.r(160),
-            pinned: true,
-            backgroundColor: AppColors.primary,
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: Colors.white,
-                size: context.r(20),
-              ),
-              onPressed: Navigation.back,
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF1B4B8C), Color(0xFF26A69A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(height: context.r(32)),
-                      Container(
-                        width: context.r(60),
-                        height: context.r(60),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.support_agent_rounded,
-                          color: Colors.white,
-                          size: context.r(28),
-                        ),
-                      ),
-                      SizedBox(height: context.r(10)),
-                      Text(
-                        'profile_menu_help'.tr(context),
-                        style: GoogleFonts.cairo(
-                          fontSize: context.sp(18),
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        'help_subtitle'.tr(context),
-                        style: GoogleFonts.tajawal(
-                          fontSize: context.sp(12),
-                          color: Colors.white.withValues(alpha: 0.75),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          // ── Gradient app bar ─────────────────────────────────────────
+          HelpGradientAppBar(
+            headerIcon: Icons.support_agent_rounded,
+            title: 'profile_menu_help'.tr(context),
+            subtitle: 'help_subtitle'.tr(context),
+            gradientColors: const [Color(0xFF1B4B8C), Color(0xFF26A69A)],
+            expandedHeight: 185,
           ),
 
           SliverPadding(
@@ -99,13 +79,17 @@ class HelpCenterView extends StatelessWidget {
               delegate: SliverChildListDelegate([
                 SizedBox(height: context.r(4)),
 
-                // ── Quick contact buttons ──────────────────────────────
-                _SectionLabel(label: 'help_section_contact'.tr(context)),
-                SizedBox(height: context.r(10)),
+                // ── Role banner ────────────────────────────────────────
+                _RoleBanner(role: role),
+                SizedBox(height: context.r(20)),
+
+                // ── Quick contact ──────────────────────────────────────
+                HelpSectionLabel(label: 'help_section_contact'.tr(context)),
+                SizedBox(height: context.r(12)),
                 Row(
                   children: [
                     Expanded(
-                      child: _QuickContactBtn(
+                      child: HelpQuickContactBtn(
                         icon: Icons.phone_rounded,
                         label: 'contact_phone_title'.tr(context),
                         color: AppColors.primary,
@@ -114,16 +98,16 @@ class HelpCenterView extends StatelessWidget {
                     ),
                     SizedBox(width: context.r(10)),
                     Expanded(
-                      child: _QuickContactBtn(
+                      child: HelpQuickContactBtn(
                         icon: Icons.chat_rounded,
                         label: 'contact_chat_title'.tr(context),
-                        color: const Color(0xFF43A047),
+                        color: const Color(0xFF25D366),
                         onTap: () => _launch('https://wa.me/20$_phone'),
                       ),
                     ),
                     SizedBox(width: context.r(10)),
                     Expanded(
-                      child: _QuickContactBtn(
+                      child: HelpQuickContactBtn(
                         icon: Icons.email_rounded,
                         label: 'contact_email_title'.tr(context),
                         color: const Color(0xFF039BE5),
@@ -135,26 +119,101 @@ class HelpCenterView extends StatelessWidget {
 
                 SizedBox(height: context.r(24)),
 
-                // ── FAQ ────────────────────────────────────────────────
-                _SectionLabel(label: 'help_section_faq'.tr(context)),
-                SizedBox(height: context.r(10)),
-                const _FaqTile(questionKey: 'help_q1', answerKey: 'help_a1'),
-                const _FaqTile(questionKey: 'help_q2', answerKey: 'help_a2'),
-                const _FaqTile(questionKey: 'help_q3', answerKey: 'help_a3'),
-                const _FaqTile(questionKey: 'help_q4', answerKey: 'help_a4'),
+                // ── How-to guides ──────────────────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    HelpSectionLabel(label: 'help_section_guides'.tr(context)),
+                  ],
+                ),
+
+                // 2-column grid
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: context.r(12),
+                    crossAxisSpacing: context.r(12),
+                    childAspectRatio: 0.82,
+                  ),
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final cat = categories[index];
+                    return HelpCategoryCard(
+                      icon: cat.icon,
+                      gradient: cat.gradient,
+                      title: cat.titleKey.tr(context),
+                      subtitle: cat.subtitleKey.tr(context),
+                      onTap: () {
+                        final guide = HelpContent.guideForCategory(
+                          cat.titleKey,
+                        );
+                        if (guide != null) {
+                          Navigation.to(HelpGuideDetailView(guide: guide));
+                        }
+                      },
+                    );
+                  },
+                ),
 
                 SizedBox(height: context.r(24)),
 
-                // ── Report a problem ───────────────────────────────────
-                _SectionLabel(label: 'help_section_report'.tr(context)),
-                SizedBox(height: context.r(10)),
-                _ReportCard(
-                  onTap: () => _launch(
-                    'mailto:$_email?subject=AqarHub%20%E2%80%94%20Report%20%2F%20Bug&body=Describe%20your%20issue%20here...',
+                // ── Popular FAQs preview ───────────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    HelpSectionLabel(label: 'help_section_faq'.tr(context)),
+                    GestureDetector(
+                      onTap: () =>
+                          Navigation.to(HelpFaqListView(audience: _audience)),
+                      child: Container(
+                        padding: context.rSymmetric(
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(context.r(20)),
+                        ),
+                        child: Text(
+                          'help_see_all'.tr(context),
+                          style: GoogleFonts.tajawal(
+                            fontSize: context.sp(12),
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: context.r(12)),
+                ..._previewFaqs.map(
+                  (f) => HelpFaqTile(
+                    questionKey: f.questionKey,
+                    answerKey: f.answerKey,
                   ),
                 ),
 
-                SizedBox(height: context.r(80)),
+                SizedBox(height: context.r(24)),
+
+                // ── Contact us & report ────────────────────────────────
+                HelpSectionLabel(label: 'help_section_report'.tr(context)),
+                SizedBox(height: context.r(12)),
+                _ReportCard(
+                  onTap: () => _launch(
+                    'mailto:$_email'
+                    '?subject=AqarHub%20%E2%80%94%20Report%20%2F%20Bug'
+                    '&body=Describe%20your%20issue%20here...',
+                  ),
+                ),
+                SizedBox(height: context.r(10)),
+                _ContactUsCard(
+                  onTap: () => Navigation.to(const ContactUsView()),
+                ),
+
+                SizedBox(height: context.r(100)),
               ]),
             ),
           ),
@@ -164,262 +223,91 @@ class HelpCenterView extends StatelessWidget {
   }
 }
 
-// ── Section label ─────────────────────────────────────────────────────────────
+// ── Role banner ───────────────────────────────────────────────────────────────
 
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
+class _RoleBanner extends StatelessWidget {
+  final AppRole role;
 
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Container(
-        width: context.r(4),
-        height: context.r(16),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-      SizedBox(width: context.r(8)),
-      Text(
-        label,
-        style: GoogleFonts.cairo(
-          fontSize: context.sp(14),
-          fontWeight: FontWeight.w800,
-          color: Colors.grey.shade700,
-        ),
-      ),
-    ],
-  );
-}
-
-// ── Quick contact button with loading ────────────────────────────────────────
-
-class _QuickContactBtn extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final Future<void> Function() onTap;
-
-  const _QuickContactBtn({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  State<_QuickContactBtn> createState() => _QuickContactBtnState();
-}
-
-class _QuickContactBtnState extends State<_QuickContactBtn> {
-  bool _loading = false;
-
-  Future<void> _handle() async {
-    if (_loading) return;
-    setState(() => _loading = true);
-    try {
-      await widget.onTap();
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
+  const _RoleBanner({required this.role});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _loading ? null : _handle,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: context.rSymmetric(horizontal: 8, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(context.r(14)),
-          boxShadow: [
-            BoxShadow(
-              color: widget.color.withValues(alpha: _loading ? 0.06 : 0.12),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+    final isOwner = role == AppRole.owner;
+    final gradient = isOwner
+        ? const [Color(0xFF6A1B9A), Color(0xFFAB47BC)]
+        : const [Color(0xFF1B4B8C), Color(0xFF42A5F5)];
+    final icon = isOwner ? Icons.home_work_rounded : Icons.search_rounded;
+    final titleKey = isOwner
+        ? 'help_banner_owner_title'
+        : 'help_banner_seeker_title';
+    final bodyKey = isOwner
+        ? 'help_banner_owner_body'
+        : 'help_banner_seeker_body';
+
+    return Container(
+      padding: context.rAll(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Column(
-          children: [
-            Container(
-              width: context.r(42),
-              height: context.r(42),
-              decoration: BoxDecoration(
-                color: widget.color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: _loading
-                  ? Padding(
-                      padding: EdgeInsets.all(context.r(10)),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: widget.color,
-                      ),
-                    )
-                  : Icon(widget.icon, color: widget.color, size: context.r(20)),
-            ),
-            SizedBox(height: context.r(6)),
-            Text(
-              widget.label,
-              style: GoogleFonts.tajawal(
-                fontSize: context.sp(11),
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── FAQ tile ─────────────────────────────────────────────────────────────────
-
-class _FaqTile extends StatefulWidget {
-  final String questionKey;
-  final String answerKey;
-  const _FaqTile({required this.questionKey, required this.answerKey});
-
-  @override
-  State<_FaqTile> createState() => _FaqTileState();
-}
-
-class _FaqTileState extends State<_FaqTile>
-    with SingleTickerProviderStateMixin {
-  bool _open = false;
-  late final AnimationController _ctrl;
-  late final Animation<double> _rotate;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-    );
-    _rotate = Tween(
-      begin: 0.0,
-      end: 0.5,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _toggle() {
-    setState(() => _open = !_open);
-    _open ? _ctrl.forward() : _ctrl.reverse();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _toggle,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        margin: context.rOnly(bottom: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(context.r(16)),
-          border: Border.all(
-            color: _open
-                ? AppColors.primary.withValues(alpha: 0.35)
-                : Colors.transparent,
+        borderRadius: BorderRadius.circular(context.r(18)),
+        boxShadow: [
+          BoxShadow(
+            color: gradient.first.withValues(alpha: 0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: _open
-                  ? AppColors.primary.withValues(alpha: 0.08)
-                  : Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: context.r(52),
+            height: context.r(52),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(context.r(14)),
             ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: context.rAll(14),
-              child: Row(
-                children: [
-                  Container(
-                    width: context.r(32),
-                    height: context.r(32),
-                    decoration: BoxDecoration(
-                      color: _open
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(context.r(9)),
-                    ),
-                    child: Icon(
-                      Icons.help_outline_rounded,
-                      size: context.r(16),
-                      color: _open ? AppColors.primary : Colors.grey.shade400,
-                    ),
-                  ),
-                  SizedBox(width: context.r(12)),
-                  Expanded(
-                    child: Text(
-                      widget.questionKey.tr(context),
-                      style: GoogleFonts.cairo(
-                        fontSize: context.sp(13),
-                        fontWeight: FontWeight.w700,
-                        color: _open ? AppColors.primary : Colors.grey.shade800,
-                      ),
-                    ),
-                  ),
-                  RotationTransition(
-                    turns: _rotate,
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: _open ? AppColors.primary : Colors.grey.shade400,
-                      size: context.r(22),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            AnimatedCrossFade(
-              firstChild: const SizedBox.shrink(),
-              secondChild: Padding(
-                padding: context.rOnly(left: 58, right: 14, bottom: 14),
-                child: Text(
-                  widget.answerKey.tr(context),
-                  style: GoogleFonts.tajawal(
-                    fontSize: context.sp(13),
-                    color: Colors.grey.shade600,
-                    height: 1.7,
+            child: Icon(icon, color: Colors.white, size: context.r(26)),
+          ),
+          SizedBox(width: context.r(14)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titleKey.tr(context),
+                  style: GoogleFonts.cairo(
+                    fontSize: context.sp(15),
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
                   ),
                 ),
-              ),
-              crossFadeState: _open
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 220),
+                SizedBox(height: context.r(3)),
+                Text(
+                  bodyKey.tr(context),
+                  style: GoogleFonts.tajawal(
+                    fontSize: context.sp(12),
+                    color: Colors.white.withValues(alpha: 0.85),
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ── Report card with loading ──────────────────────────────────────────────────
+// ── Report card ───────────────────────────────────────────────────────────────
 
 class _ReportCard extends StatefulWidget {
   final Future<void> Function() onTap;
+
   const _ReportCard({required this.onTap});
 
   @override
@@ -443,8 +331,7 @@ class _ReportCardState extends State<_ReportCard> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _loading ? null : _handle,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+      child: Container(
         padding: context.rAll(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -512,7 +399,87 @@ class _ReportCardState extends State<_ReportCard> {
             ),
             Icon(
               Directionality.of(context) == TextDirection.rtl
-                  ? Icons.arrow_back_ios_new_rounded
+                  ? Icons.arrow_forward_ios_rounded
+                  : Icons.arrow_forward_ios_rounded,
+              size: context.r(13),
+              color: Colors.grey.shade300,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Contact us card ───────────────────────────────────────────────────────────
+
+class _ContactUsCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ContactUsCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: context.rAll(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(context.r(16)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.07),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: context.r(46),
+              height: context.r(46),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1B4B8C), Color(0xFF42A5F5)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(context.r(13)),
+              ),
+              child: Icon(
+                Icons.headset_mic_rounded,
+                color: Colors.white,
+                size: context.r(20),
+              ),
+            ),
+            SizedBox(width: context.r(14)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'contact_title'.tr(context),
+                    style: GoogleFonts.cairo(
+                      fontSize: context.sp(14),
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    'contact_subtitle'.tr(context),
+                    style: GoogleFonts.tajawal(
+                      fontSize: context.sp(12),
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Directionality.of(context) == TextDirection.rtl
+                  ? Icons.arrow_forward_ios_rounded
                   : Icons.arrow_forward_ios_rounded,
               size: context.r(13),
               color: Colors.grey.shade300,

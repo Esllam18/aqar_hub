@@ -7,12 +7,28 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:545470530426:android:9f1f7bdedf3dee92158cc3",
+        "mobilesdk_app_id": "1:545470530426:android:0a54b0e0f5ecb6e9158cc3",
         "android_client_info": {
           "package_name": "com.aqarhub.app"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "545470530426-75l8kjucnk92f2a3i2ujeao2fvsjcm5t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aqarhub.app",
+            "certificate_hash": "7a332ed13922ce0e29fcd0501680b7fd558317b1"
+          }
+        },
+        {
+          "client_id": "545470530426-pn9up35hn8pqe4n3lmmhe9h82a7nvvg5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aqarhub.app",
+            "certificate_hash": "76c7c0faff7d7af87dcc27c2b907a6d841652be5"
+          }
+        },
         {
           "client_id": "545470530426-s975aaqlpnduh8bk531ggt5cv2mishkn.apps.googleusercontent.com",
           "client_type": 3
@@ -31,10 +47,54 @@
               "client_type": 3
             },
             {
-              "client_id": "545470530426-rhfvsjsjr7cj8a8itliqne9ed002kant.apps.googleusercontent.com",
+              "client_id": "545470530426-n0e0rr2f79s6r7ftv9oevhqq21a04su7.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.aqarhub.app"
+                "bundle_id": "com.example.aqarHub"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:545470530426:android:9f1f7bdedf3dee92158cc3",
+        "android_client_info": {
+          "package_name": "com.example.aqar_hub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "545470530426-73m4b4vl3dgd6b5d8u9s5v8clg3vgqk7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.aqar_hub",
+            "certificate_hash": "e751938e9554c52245b47d3f82f26d5db9294330"
+          }
+        },
+        {
+          "client_id": "545470530426-s975aaqlpnduh8bk531ggt5cv2mishkn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMo91fXAYgU56z_IzNJz9NverqxsB0ntU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "545470530426-s975aaqlpnduh8bk531ggt5cv2mishkn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "545470530426-n0e0rr2f79s6r7ftv9oevhqq21a04su7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.aqarHub"
               }
             }
           ]

@@ -7,10 +7,10 @@ const EgyptLocationNode aswanGovernorate = EgyptLocationNode(
   arName: 'أسوان',
   aliases: ['aswan', 'أسوان', 'اسوان'],
   children: [
-    EgyptLocationNode(slug: 'aswan-city', enName: 'Aswan City', arName: 'مدينة أسوان', aliases: ['aswan city', 'مدينة أسوان']),
-    EgyptLocationNode(slug: 'kom-ombo', enName: 'Kom Ombo', arName: 'كوم أمبو', aliases: ['kom ombo', 'كوم أمبو']),
+    EgyptLocationNode(slug: 'aswan_city', enName: 'Aswan City', arName: 'مدينة أسوان', aliases: ['aswan city', 'مدينة أسوان', 'aswan-city']),
+    EgyptLocationNode(slug: 'kom_ombo', enName: 'Kom Ombo', arName: 'كوم أمبو', aliases: ['kom ombo', 'كوم أمبو', 'kom-ombo']),
     EgyptLocationNode(slug: 'edfu', enName: 'Edfu', arName: 'إدفو', aliases: ['edfu', 'إدفو', 'idfu']),
-    EgyptLocationNode(slug: 'nasr-el-nuba', enName: 'Nasr El Nuba', arName: 'نصر النوبة', aliases: ['nasr nuba', 'نصر النوبة']),
+    EgyptLocationNode(slug: 'nasr_el_nuba', enName: 'Nasr El Nuba', arName: 'نصر النوبة', aliases: ['nasr nuba', 'نصر النوبة', 'nasr-el-nuba']),
     EgyptLocationNode(slug: 'daraw', enName: 'Daraw', arName: 'دراو', aliases: ['daraw', 'دراو']),
   ],
 );

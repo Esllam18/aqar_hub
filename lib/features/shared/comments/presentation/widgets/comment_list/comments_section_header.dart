@@ -40,6 +40,7 @@ class CommentsSectionHeader extends StatelessWidget {
           Container(
             padding: context.rSymmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: AppColors.primary.withOpacity(0.10),
               borderRadius: BorderRadius.circular(context.r(8)),
             ),

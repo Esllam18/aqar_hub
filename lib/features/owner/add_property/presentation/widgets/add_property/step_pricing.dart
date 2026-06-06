@@ -46,6 +46,8 @@ class _StepPricingState extends State<StepPricing> {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => RentalOptionSheet(
+      suggestedBeds: widget.form.totalBeds,
+      suggestedRooms: widget.form.totalRooms,
       onSave: (opt) {
         final u = [...widget.form.rentalOptions, opt];
         widget.onChanged(widget.form.copyWith(rentalOptions: u));
@@ -59,6 +61,8 @@ class _StepPricingState extends State<StepPricing> {
     backgroundColor: Colors.transparent,
     builder: (_) => RentalOptionSheet(
       initial: opt,
+      suggestedBeds: widget.form.totalBeds,
+      suggestedRooms: widget.form.totalRooms,
       onSave: (o) {
         final u = [...widget.form.rentalOptions];
         u[i] = o;
@@ -306,7 +310,18 @@ class _HighPriceWarning extends StatelessWidget {
 class RentalOptionSheet extends StatefulWidget {
   final RentalOptionDraft? initial;
   final ValueChanged<RentalOptionDraft> onSave;
-  const RentalOptionSheet({super.key, this.initial, required this.onSave});
+  // Auto-fill hints derived from step_specs (totalBeds / totalRooms)
+  final int? suggestedBeds;
+  final int? suggestedRooms;
+
+  const RentalOptionSheet({
+    super.key,
+    this.initial,
+    required this.onSave,
+    this.suggestedBeds,
+    this.suggestedRooms,
+  });
+
   @override
   State<RentalOptionSheet> createState() => _SheetState();
 }
@@ -315,6 +330,32 @@ class _SheetState extends State<RentalOptionSheet> {
   late String _type;
   late final TextEditingController _price, _total, _avail;
   final _key = GlobalKey<FormState>();
+
+  /// Returns the suggested total quantity for the given type, as a string.
+  String _suggestedQty(String type) {
+    if (type == 'bed' && widget.suggestedBeds != null) {
+      return '${widget.suggestedBeds}';
+    }
+    if (type == 'room' && widget.suggestedRooms != null) {
+      return '${widget.suggestedRooms}';
+    }
+    return '';
+  }
+
+  /// Called when the user switches type — updates qty fields with auto-fill.
+  void _onTypeChanged(String newType) {
+    setState(() => _type = newType);
+    // Only auto-fill if the user has NOT already typed a custom value
+    final isNew = widget.initial == null;
+    if (isNew) {
+      final suggested = _suggestedQty(newType);
+      if (suggested.isNotEmpty) {
+        _total.text = suggested;
+        _avail.text = suggested;
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -322,13 +363,14 @@ class _SheetState extends State<RentalOptionSheet> {
     _price = TextEditingController(
       text: widget.initial?.price.toStringAsFixed(0) ?? '',
     );
+    // Pre-fill total/available from specs when creating a brand-new option
+    final isNew = widget.initial == null;
+    final autoQty = isNew ? _suggestedQty(_type) : '';
     _total = TextEditingController(
-      text: widget.initial != null ? '${widget.initial!.totalQuantity}' : '',
+      text: isNew ? autoQty : '${widget.initial!.totalQuantity}',
     );
     _avail = TextEditingController(
-      text: widget.initial != null
-          ? '${widget.initial!.availableQuantity}'
-          : '',
+      text: isNew ? autoQty : '${widget.initial!.availableQuantity}',
     );
   }
 
@@ -389,7 +431,7 @@ class _SheetState extends State<RentalOptionSheet> {
                     child: Padding(
                       padding: context.rOnly(right: t != 'apartment' ? 8 : 0),
                       child: GestureDetector(
-                        onTap: () => setState(() => _type = t),
+                        onTap: () => _onTypeChanged(t),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           padding: context.rSymmetric(vertical: 12),
@@ -440,13 +482,27 @@ class _SheetState extends State<RentalOptionSheet> {
                 child: ElevatedButton(
                   onPressed: () {
                     if (_key.currentState?.validate() != true) return;
+                    final price = double.tryParse(_price.text.trim()) ?? 0;
+                    if (price <= 0) {
+                      return; // double-guard, validator already catches this
+                    }
                     Navigator.pop(context);
+                    // Apartment is always 1 unit — quantity fields are hidden
+                    final qty = _type == 'apartment'
+                        ? 1
+                        : (int.tryParse(_total.text.trim()) ?? 1).clamp(
+                            1,
+                            9999,
+                          );
+                    final avail = _type == 'apartment'
+                        ? 1
+                        : (int.tryParse(_avail.text.trim()) ?? 1).clamp(0, qty);
                     widget.onSave(
                       RentalOptionDraft(
                         type: _type,
-                        price: double.tryParse(_price.text) ?? 0,
-                        totalQuantity: int.tryParse(_total.text) ?? 1,
-                        availableQuantity: int.tryParse(_avail.text) ?? 1,
+                        price: price,
+                        totalQuantity: qty,
+                        availableQuantity: avail,
                       ),
                     );
                   },
@@ -485,8 +541,11 @@ class _QtyRow extends StatelessWidget {
     required this.availCtrl,
     required this.type,
   });
+
   @override
   Widget build(BuildContext context) {
+    final isApartment = type == 'apartment';
+
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(context.r(10)),
       borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
@@ -495,26 +554,33 @@ class _QtyRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(context.r(10)),
       borderSide: const BorderSide(color: AppColors.primary),
     );
-    deco(String hint) => InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: const Color(0xFFF8F9FB),
-      contentPadding: context.rSymmetric(horizontal: 14, vertical: 12),
-      border: border,
-      enabledBorder: border,
-      focusedBorder: focusedBorder,
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(context.r(10)),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
+    final errorBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(context.r(10)),
+      borderSide: const BorderSide(color: Colors.redAccent),
     );
-    validator(v) =>
-        (v == null || v.isEmpty) ? 'addprop_required'.tr(context) : null;
+
+    InputDecoration deco(String hint, {String? suffix, Widget? prefix}) =>
+        InputDecoration(
+          hintText: hint,
+          filled: true,
+          fillColor: const Color(0xFFF8F9FB),
+          contentPadding: context.rSymmetric(horizontal: 14, vertical: 12),
+          border: border,
+          enabledBorder: border,
+          focusedBorder: focusedBorder,
+          errorBorder: errorBorder,
+          focusedErrorBorder: errorBorder,
+          suffixText: suffix,
+          prefixIcon: prefix,
+        );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Price field ──────────────────────────────────────────────────
         Text(
-          '${'addprop_price_per'.tr(context)} ${'addprop_per_$type'.tr(context)}',
+          '${'addprop_price_per'.tr(context)} '
+          '${'addprop_per_$type'.tr(context)}',
           style: GoogleFonts.tajawal(
             fontSize: context.sp(12),
             fontWeight: FontWeight.w600,
@@ -524,70 +590,110 @@ class _QtyRow extends StatelessWidget {
         SizedBox(height: context.r(6)),
         TextFormField(
           controller: priceCtrl,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: deco('0').copyWith(
-            prefixIcon: Icon(
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+          ],
+          decoration: deco(
+            'addprop_price_hint'.tr(context),
+            suffix: 'currency'.tr(context),
+            prefix: Icon(
               Icons.payments_outlined,
               size: context.r(16),
               color: AppColors.primary,
             ),
-            suffixText: 'currency'.tr(context),
           ),
-          validator: validator,
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) {
+              return 'addprop_price_required'.tr(context);
+            }
+            final parsed = double.tryParse(v.trim());
+            if (parsed == null) return 'addprop_price_invalid'.tr(context);
+            if (parsed <= 0) return 'addprop_price_positive'.tr(context);
+            return null;
+          },
         ),
-        SizedBox(height: context.r(12)),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'addprop_total_qty'.tr(context),
-                    style: GoogleFonts.tajawal(
-                      fontSize: context.sp(12),
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+
+        // ── Quantity fields (hidden for apartment) ───────────────────────
+        if (!isApartment) ...[
+          SizedBox(height: context.r(12)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Total quantity
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'addprop_total_qty'.tr(context),
+                      style: GoogleFonts.tajawal(
+                        fontSize: context.sp(12),
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: context.r(6)),
-                  TextFormField(
-                    controller: totalCtrl,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: deco('1'),
-                    validator: validator,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: context.r(12)),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'addprop_available_qty'.tr(context),
-                    style: GoogleFonts.tajawal(
-                      fontSize: context.sp(12),
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                    SizedBox(height: context.r(6)),
+                    TextFormField(
+                      controller: totalCtrl,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: deco('1'),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'addprop_required'.tr(context);
+                        }
+                        final n = int.tryParse(v.trim());
+                        if (n == null || n < 1) {
+                          return 'addprop_qty_min_1'.tr(context);
+                        }
+                        return null;
+                      },
                     ),
-                  ),
-                  SizedBox(height: context.r(6)),
-                  TextFormField(
-                    controller: availCtrl,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: deco('1'),
-                    validator: validator,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+              SizedBox(width: context.r(12)),
+              // Available quantity
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'addprop_available_qty'.tr(context),
+                      style: GoogleFonts.tajawal(
+                        fontSize: context.sp(12),
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    SizedBox(height: context.r(6)),
+                    TextFormField(
+                      controller: availCtrl,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: deco('1'),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'addprop_required'.tr(context);
+                        }
+                        final avail = int.tryParse(v.trim());
+                        final total = int.tryParse(totalCtrl.text.trim()) ?? 0;
+                        if (avail == null || avail < 0) {
+                          return 'addprop_qty_non_neg'.tr(context);
+                        }
+                        if (avail > total && total > 0) {
+                          return 'addprop_avail_exceeds_total'.tr(context);
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

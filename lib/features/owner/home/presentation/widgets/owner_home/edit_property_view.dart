@@ -1,10 +1,11 @@
 // lib/features/owner/home/presentation/widgets/owner_home/edit_property_view.dart
-//
-// Orchestrator only — 1,319 lines → ~280 lines.
-// Shared widgets → edit_property/edit_property_shared.dart
+// ignore_for_file: deprecated_member_use
 
 import 'dart:io';
 import 'package:aqar_hub/core/constants/app_colors.dart';
+import 'package:aqar_hub/core/location/data/egypt_locations.dart';
+import 'package:aqar_hub/core/location/helper/location_display_helper.dart';
+import 'package:aqar_hub/core/location/models/location_node.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:aqar_hub/features/owner/home/data/datasources/owner_properties_remote_datasource.dart';
@@ -49,64 +50,146 @@ class _EditContent extends StatefulWidget {
 
 class _EditContentState extends State<_EditContent> {
   final _formKey = GlobalKey<FormState>();
-  final _picker = ImagePicker();
+  final _picker   = ImagePicker();
 
   late final TextEditingController _titleCtrl;
   late final TextEditingController _descCtrl;
   late final TextEditingController _addressCtrl;
-  late final TextEditingController _cityCtrl;
   late final TextEditingController _priceCtrl;
   late final TextEditingController _areaCtrl;
 
-  late int? _rooms, _beds, _baths;
-  late bool _furnished, _isRented;
+  // ── Location state — slugs only ───────────────────────────────────────────
+  late String _governorateSlug;
+  late String _citySlug;
+  late String _areaSlug;
+
+  late int?   _rooms, _beds, _baths;
+  late bool   _furnished, _isRented;
   late String _listingType, _audience, _propType;
   late List<RentalOptionModel> _rentalOptions;
   late List<String> _keptUrls;
   final List<File> _newFiles = [];
 
   static const _roomOpts = [1, 2, 3, 4, 5, 6, 7, 8];
-  static const _bedOpts = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  static const _bedOpts  = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   static const _bathOpts = [1, 2, 3, 4, 5];
 
   @override
   void initState() {
     super.initState();
     final p = widget.property;
-    _titleCtrl = TextEditingController(text: p.title);
-    _descCtrl = TextEditingController(text: p.description);
+    _titleCtrl   = TextEditingController(text: p.title);
+    _descCtrl    = TextEditingController(text: p.description);
     _addressCtrl = TextEditingController(text: p.address);
-    _cityCtrl = TextEditingController(text: p.city);
-    _priceCtrl = TextEditingController(
-      text: p.basePrice?.toInt().toString() ?? '',
-    );
-    _areaCtrl = TextEditingController(text: p.areaM2?.toInt().toString() ?? '');
-    _rooms = p.totalRooms;
-    _beds = p.totalBeds;
-    _baths = p.bathrooms;
-    _furnished = p.isFurnished;
-    _isRented = p.isRented;
+    _priceCtrl   = TextEditingController(text: p.basePrice?.toInt().toString() ?? '');
+    _areaCtrl    = TextEditingController(text: p.areaM2?.toInt().toString() ?? '');
+    _rooms       = p.totalRooms;
+    _beds        = p.totalBeds;
+    _baths       = p.bathrooms;
+    _furnished   = p.isFurnished;
+    _isRented    = p.isRented;
     _listingType = p.listingType;
-    _audience = p.targetAudience;
-    _propType = p.propertyType;
+    _audience    = p.targetAudience;
+    _propType    = p.propertyType;
     _rentalOptions = List.from(p.rentalOptions);
-    _keptUrls = List.from(p.imageUrls);
+    _keptUrls      = List.from(p.imageUrls);
+    // Initialise location slugs from model
+    _governorateSlug = p.governorateSlug ?? '';
+    _citySlug        = p.citySlug        ?? '';
+    _areaSlug        = p.areaSlug        ?? '';
   }
 
   @override
   void dispose() {
-    for (final c in [
-      _titleCtrl,
-      _descCtrl,
-      _addressCtrl,
-      _cityCtrl,
-      _priceCtrl,
-      _areaCtrl,
-    ]) {
+    for (final c in [_titleCtrl, _descCtrl, _addressCtrl, _priceCtrl, _areaCtrl]) {
       c.dispose();
     }
     super.dispose();
   }
+
+  // ── Derived location helpers ───────────────────────────────────────────────
+
+  List<EgyptLocationNode> get _cities =>
+      EgyptLocations.citiesForGovernorate(_governorateSlug.isEmpty ? null : _governorateSlug);
+
+  List<EgyptLocationNode> get _areas =>
+      EgyptLocations.areasForCity(
+        governorateSlug: _governorateSlug.isEmpty ? null : _governorateSlug,
+        citySlug:        _citySlug.isEmpty        ? null : _citySlug,
+      );
+
+  // ── Pickers ───────────────────────────────────────────────────────────────
+
+  void _pickGovernorate() => showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _LocationSheet(
+          title: 'addprop_select_governorate'.tr(context),
+          items: EgyptLocations.governorates,
+          selectedSlug: _governorateSlug.isEmpty ? null : _governorateSlug,
+          onSelected: (node) {
+            Navigator.pop(context);
+            setState(() {
+              _governorateSlug = node.slug;
+              _citySlug        = '';
+              _areaSlug        = '';
+            });
+            final cities = EgyptLocations.citiesForGovernorate(node.slug);
+            if (cities.isNotEmpty) {
+              Future.delayed(const Duration(milliseconds: 300), _pickCity);
+            }
+          },
+        ),
+      );
+
+  void _pickCity() {
+    if (_cities.isEmpty) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LocationSheet(
+        title: 'addprop_select_city'.tr(context),
+        items: _cities,
+        selectedSlug: _citySlug.isEmpty ? null : _citySlug,
+        onSelected: (node) {
+          Navigator.pop(context);
+          setState(() {
+            _citySlug = node.slug;
+            _areaSlug = '';
+          });
+          final areas = EgyptLocations.areasForCity(
+            governorateSlug: _governorateSlug,
+            citySlug: node.slug,
+          );
+          if (areas.isNotEmpty) {
+            Future.delayed(const Duration(milliseconds: 300), _pickArea);
+          }
+        },
+      ),
+    );
+  }
+
+  void _pickArea() {
+    if (_areas.isEmpty) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LocationSheet(
+        title: 'addprop_select_area'.tr(context),
+        items: _areas,
+        selectedSlug: _areaSlug.isEmpty ? null : _areaSlug,
+        onSelected: (node) {
+          Navigator.pop(context);
+          setState(() => _areaSlug = node.slug);
+        },
+      ),
+    );
+  }
+
+  // ── Image / submit ─────────────────────────────────────────────────────────
 
   Future<void> _pickImages() async {
     final picked = await _picker.pickMultiImage(imageQuality: 85);
@@ -116,82 +199,87 @@ class _EditContentState extends State<_EditContent> {
 
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_governorateSlug.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        content: Text('addprop_location_required'.tr(context),
+            style: GoogleFonts.tajawal(color: Colors.white)),
+      ));
+      return;
+    }
     context.read<EditPropertyCubit>().save(
-      title: _titleCtrl.text.trim(),
-      description: _descCtrl.text.trim(),
-      address: _addressCtrl.text.trim(),
-      city: _cityCtrl.text.trim(),
-      totalRooms: _rooms,
-      totalBeds: _beds,
-      bathrooms: _baths,
-      areaM2: double.tryParse(_areaCtrl.text),
-      isFurnished: _furnished,
-      listingType: _listingType,
-      targetAudience: _audience,
-      propertyType: _propType,
-      basePrice: double.tryParse(_priceCtrl.text),
-      isRented: _isRented,
-      rentalOptions: _rentalOptions,
-      keptImageUrls: _keptUrls,
-      newImageFiles: _newFiles,
+      title:           _titleCtrl.text.trim(),
+      description:     _descCtrl.text.trim(),
+      address:         _addressCtrl.text.trim(),
+      city:        _citySlug,
+      totalRooms:      _rooms,
+      totalBeds:       _beds,
+      bathrooms:       _baths,
+      areaM2:          double.tryParse(_areaCtrl.text),
+      isFurnished:     _furnished,
+      listingType:     _listingType,
+      targetAudience:  _audience,
+      propertyType:    _propType,
+      basePrice:       double.tryParse(_priceCtrl.text),
+      isRented:        _isRented,
+      rentalOptions:   _rentalOptions,
+      keptImageUrls:   _keptUrls,
+      newImageFiles:   _newFiles,
     );
   }
 
   String _typeLabel(String t) => switch (t) {
-    'villa' => 'property_type_villa'.tr(context),
-    'studio' => 'property_type_studio'.tr(context),
-    'penthouse' => 'property_type_penthouse'.tr(context),
-    'duplex' => 'property_type_duplex'.tr(context),
-    'chalet' => 'property_type_chalet'.tr(context),
-    _ => 'propertytypeapartment'.tr(context),
-  };
+        'villa'     => 'property_type_villa'.tr(context),
+        'studio'    => 'property_type_studio'.tr(context),
+        'penthouse' => 'property_type_penthouse'.tr(context),
+        'duplex'    => 'property_type_duplex'.tr(context),
+        'chalet'    => 'property_type_chalet'.tr(context),
+        _           => 'propertytypeapartment'.tr(context),
+      };
 
   String _audienceLabel(String v) => switch (v) {
-    'male' => 'audience_male'.tr(context),
-    'female' => 'audience_female'.tr(context),
-    'family' => 'audience_family'.tr(context),
-    _ => 'audience_all'.tr(context),
-  };
+        'male'   => 'audience_male'.tr(context),
+        'female' => 'audience_female'.tr(context),
+        'family' => 'audience_family'.tr(context),
+        _        => 'audience_all'.tr(context),
+      };
 
   @override
   Widget build(BuildContext context) {
+    // ── Current location display label (localised, not slug) ─────────────
+    final locationLabel = _governorateSlug.isEmpty
+        ? 'addprop_select_governorate'.tr(context)
+        : LocationDisplayHelper.locationLabel(
+            context: context,
+            governorateSlug: _governorateSlug,
+            citySlug: _citySlug.isEmpty ? null : _citySlug,
+            areaSlug: _areaSlug.isEmpty ? null : _areaSlug,
+          );
+
     return BlocListener<EditPropertyCubit, EditPropertyState>(
       listener: (ctx, state) {
         if (state is EditPropertySuccess) {
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            SnackBar(
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              content: Text(
-                'owner_property_updated'.tr(ctx),
+          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+            content: Text('owner_property_updated'.tr(ctx),
                 style: GoogleFonts.tajawal(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          );
+                    color: Colors.white, fontWeight: FontWeight.w700)),
+          ));
           Navigator.pop(ctx, state.updatedProperty);
         } else if (state is EditPropertyError) {
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            SnackBar(
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              content: Text(
-                state.message,
+          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+            content: Text(state.message,
                 style: GoogleFonts.tajawal(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          );
+                    color: Colors.white, fontWeight: FontWeight.w700)),
+          ));
         }
       },
       child: Scaffold(
@@ -207,10 +295,9 @@ class _EditContentState extends State<_EditContent> {
           title: Text(
             'owner_edit_property'.tr(context),
             style: GoogleFonts.cairo(
-              fontSize: context.sp(18),
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF1B2D5E),
-            ),
+                fontSize: context.sp(18),
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1B2D5E)),
           ),
           actions: [
             BlocBuilder<EditPropertyCubit, EditPropertyState>(
@@ -224,25 +311,20 @@ class _EditContentState extends State<_EditContent> {
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: context.rSymmetric(horizontal: 16, vertical: 8),
+                          borderRadius: BorderRadius.circular(12)),
+                      padding:
+                          context.rSymmetric(horizontal: 16, vertical: 8),
                     ),
                     child: loading
                         ? SizedBox(
                             width: context.r(16),
                             height: context.r(16),
                             child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
+                                strokeWidth: 2, color: Colors.white),
                           )
-                        : Text(
-                            'btnsave'.tr(context),
+                        : Text('btnsave'.tr(context),
                             style: GoogleFonts.cairo(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                                fontWeight: FontWeight.w800)),
                   ),
                 );
               },
@@ -257,7 +339,7 @@ class _EditContentState extends State<_EditContent> {
               EditStatusBanner(isRented: _isRented),
               SizedBox(height: context.r(16)),
 
-              // Photos
+              // ── Photos ────────────────────────────────────────────────
               EditSectionCard(
                 title: 'addprop_photos'.tr(context),
                 icon: Icons.photo_library_outlined,
@@ -267,14 +349,15 @@ class _EditContentState extends State<_EditContent> {
                     newFiles: _newFiles,
                     onRemoveExisting: (i) =>
                         setState(() => _keptUrls.removeAt(i)),
-                    onRemoveNew: (i) => setState(() => _newFiles.removeAt(i)),
+                    onRemoveNew: (i) =>
+                        setState(() => _newFiles.removeAt(i)),
                     onAdd: _pickImages,
                   ),
                 ],
               ),
               SizedBox(height: context.r(12)),
 
-              // Basic info
+              // ── Basic info ────────────────────────────────────────────
               EditSectionCard(
                 title: 'owner_section_basic_info'.tr(context),
                 icon: Icons.info_outline_rounded,
@@ -291,16 +374,99 @@ class _EditContentState extends State<_EditContent> {
                     controller: _addressCtrl,
                     label: 'addprop_address'.tr(context),
                   ),
-                  SizedBox(height: context.r(12)),
-                  EditField(
-                    controller: _cityCtrl,
-                    label: 'addprop_city'.tr(context),
-                  ),
                 ],
               ),
               SizedBox(height: context.r(12)),
 
-              // Property type
+              // ── Location pickers (slugs — NOT a text field) ───────────
+              EditSectionCard(
+                title: 'addprop_location'.tr(context),
+                icon: Icons.location_on_outlined,
+                children: [
+                  // Current selection display
+                  if (_governorateSlug.isNotEmpty)
+                    Padding(
+                      padding: context.rOnly(bottom: 10),
+                      child: Container(
+                        padding: context.rAll(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius:
+                              BorderRadius.circular(context.r(10)),
+                          border:
+                              Border.all(color: const Color(0xFFBBF7D0)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle_rounded,
+                                color: const Color(0xFF059669),
+                                size: context.r(16)),
+                            SizedBox(width: context.r(8)),
+                            Expanded(
+                              child: Text(
+                                locationLabel,
+                                style: GoogleFonts.tajawal(
+                                    fontSize: context.sp(13),
+                                    color: const Color(0xFF059669),
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // Governorate picker tile
+                  _PickerTile(
+                    icon: Icons.location_city_rounded,
+                    label: _governorateSlug.isEmpty
+                        ? 'addprop_select_governorate'.tr(context)
+                        : (EgyptLocations.findGovernorate(_governorateSlug)
+                                ?.label(context) ??
+                            _governorateSlug),
+                    isSelected: _governorateSlug.isNotEmpty,
+                    onTap: _pickGovernorate,
+                  ),
+
+                  // City picker tile — only when gov is chosen and has cities
+                  if (_governorateSlug.isNotEmpty && _cities.isNotEmpty) ...[
+                    SizedBox(height: context.r(10)),
+                    _PickerTile(
+                      icon: Icons.place_rounded,
+                      label: _citySlug.isEmpty
+                          ? 'addprop_select_city'.tr(context)
+                          : (EgyptLocations.findCity(
+                                    governorateSlug: _governorateSlug,
+                                    citySlug: _citySlug,
+                                  )?.label(context) ??
+                              _citySlug),
+                      isSelected: _citySlug.isNotEmpty,
+                      onTap: _pickCity,
+                    ),
+                  ],
+
+                  // Area picker tile — only when city is chosen and has areas
+                  if (_citySlug.isNotEmpty && _areas.isNotEmpty) ...[
+                    SizedBox(height: context.r(10)),
+                    _PickerTile(
+                      icon: Icons.map_outlined,
+                      label: _areaSlug.isEmpty
+                          ? 'addprop_select_area'.tr(context)
+                          : (EgyptLocations.findArea(
+                                    governorateSlug: _governorateSlug,
+                                    citySlug: _citySlug,
+                                    areaSlug: _areaSlug,
+                                  )?.label(context) ??
+                              _areaSlug),
+                      isSelected: _areaSlug.isNotEmpty,
+                      onTap: _pickArea,
+                    ),
+                  ],
+                ],
+              ),
+              SizedBox(height: context.r(12)),
+
+              // ── Property type ─────────────────────────────────────────
               EditSectionCard(
                 title: 'owner_section_property_type'.tr(context),
                 icon: Icons.apartment_rounded,
@@ -308,12 +474,8 @@ class _EditContentState extends State<_EditContent> {
                   EditChipSelector<String>(
                     label: 'addprop_property_type'.tr(context),
                     options: const [
-                      'apartment',
-                      'villa',
-                      'studio',
-                      'penthouse',
-                      'duplex',
-                      'chalet',
+                      'apartment', 'villa', 'studio',
+                      'penthouse', 'duplex', 'chalet',
                     ],
                     selected: _propType,
                     labelBuilder: _typeLabel,
@@ -323,7 +485,7 @@ class _EditContentState extends State<_EditContent> {
               ),
               SizedBox(height: context.r(12)),
 
-              // Specs
+              // ── Specs ─────────────────────────────────────────────────
               EditSectionCard(
                 title: 'owner_section_specs'.tr(context),
                 icon: Icons.straighten_rounded,
@@ -366,7 +528,7 @@ class _EditContentState extends State<_EditContent> {
               ),
               SizedBox(height: context.r(12)),
 
-              // Listing type
+              // ── Listing type ──────────────────────────────────────────
               EditSectionCard(
                 title: 'owner_section_listing'.tr(context),
                 icon: Icons.sell_outlined,
@@ -384,7 +546,7 @@ class _EditContentState extends State<_EditContent> {
               ),
               SizedBox(height: context.r(12)),
 
-              // Target audience
+              // ── Target audience ───────────────────────────────────────
               EditSectionCard(
                 title: 'owner_section_audience'.tr(context),
                 icon: Icons.people_outline_rounded,
@@ -400,7 +562,7 @@ class _EditContentState extends State<_EditContent> {
               ),
               SizedBox(height: context.r(12)),
 
-              // Price
+              // ── Price ─────────────────────────────────────────────────
               EditSectionCard(
                 title: 'owner_section_price'.tr(context),
                 icon: Icons.attach_money_rounded,
@@ -416,16 +578,17 @@ class _EditContentState extends State<_EditContent> {
               ),
               SizedBox(height: context.r(12)),
 
-              // Rental options
+              // ── Rental options ────────────────────────────────────────
               if (_listingType == 'rent') ...[
                 _RentalOptionsEditor(
                   options: _rentalOptions,
-                  onChanged: (opts) => setState(() => _rentalOptions = opts),
+                  onChanged: (opts) =>
+                      setState(() => _rentalOptions = opts),
                 ),
                 SizedBox(height: context.r(12)),
               ],
 
-              // Description
+              // ── Description ───────────────────────────────────────────
               EditSectionCard(
                 title: 'detailsdescription'.tr(context),
                 icon: Icons.description_outlined,
@@ -440,7 +603,7 @@ class _EditContentState extends State<_EditContent> {
               ),
               SizedBox(height: context.r(12)),
 
-              // Status
+              // ── Status ────────────────────────────────────────────────
               EditSectionCard(
                 title: 'owner_section_status'.tr(context),
                 icon: Icons.lock_clock_rounded,
@@ -470,12 +633,198 @@ class _EditContentState extends State<_EditContent> {
   }
 }
 
-// ── Rental options editor ─────────────────────────────────────────────────────
+// ── Picker tile ───────────────────────────────────────────────────────────────
+
+class _PickerTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _PickerTile({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        borderRadius: BorderRadius.circular(context.r(12)),
+        onTap: onTap,
+        child: Container(
+          padding: context.rSymmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary.withOpacity(0.05)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(context.r(12)),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primary
+                  : Colors.grey.withOpacity(0.25),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon,
+                  size: context.r(18),
+                  color: isSelected
+                      ? AppColors.primary
+                      : Colors.grey.shade500),
+              SizedBox(width: context.r(10)),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.tajawal(
+                    fontSize: context.sp(13),
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+              Icon(
+                isSelected
+                    ? Icons.check_circle_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                size: context.r(18),
+                color: isSelected
+                    ? AppColors.primary
+                    : Colors.grey.shade400,
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+// ── Location bottom sheet ─────────────────────────────────────────────────────
+
+class _LocationSheet extends StatelessWidget {
+  final String title;
+  final List<EgyptLocationNode> items;
+  final String? selectedSlug;
+  final ValueChanged<EgyptLocationNode> onSelected;
+
+  const _LocationSheet({
+    required this.title,
+    required this.items,
+    this.selectedSlug,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) => FractionallySizedBox(
+        heightFactor: 0.75,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+                top: Radius.circular(context.r(24))),
+          ),
+          child: Column(
+            children: [
+              SizedBox(height: context.r(12)),
+              Container(
+                width: context.r(40),
+                height: context.r(4),
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius:
+                        BorderRadius.circular(context.r(4))),
+              ),
+              SizedBox(height: context.r(14)),
+              Padding(
+                padding: context.rSymmetric(horizontal: 18),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(title,
+                      style: GoogleFonts.cairo(
+                          fontSize: context.sp(17),
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1B2D5E))),
+                ),
+              ),
+              SizedBox(height: context.r(12)),
+              Expanded(
+                child: ListView.separated(
+                  padding: context.rSymmetric(horizontal: 16),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) =>
+                      SizedBox(height: context.r(6)),
+                  itemBuilder: (_, i) {
+                    final item = items[i];
+                    final sel = item.slug == selectedSlug;
+                    return InkWell(
+                      borderRadius:
+                          BorderRadius.circular(context.r(12)),
+                      onTap: () => onSelected(item),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: context.rSymmetric(
+                            horizontal: 14, vertical: 13),
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? AppColors.primary.withOpacity(0.08)
+                              : Colors.transparent,
+                          borderRadius:
+                              BorderRadius.circular(context.r(12)),
+                          border: Border.all(
+                            color: sel
+                                ? AppColors.primary.withOpacity(0.3)
+                                : Colors.grey.withOpacity(0.15),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              // label(context) → reads arName or enName
+                              // based on current locale.
+                              // Slug is NEVER displayed.
+                              child: Text(
+                                item.label(context),
+                                style: GoogleFonts.tajawal(
+                                  fontSize: context.sp(14),
+                                  fontWeight: sel
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: sel
+                                      ? AppColors.primary
+                                      : const Color(0xFF1B2D5E),
+                                ),
+                              ),
+                            ),
+                            if (sel)
+                              Icon(Icons.check_circle_rounded,
+                                  size: context.r(18),
+                                  color: AppColors.primary),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(
+                  height: context.r(8) +
+                      MediaQuery.paddingOf(context).bottom),
+            ],
+          ),
+        ),
+      );
+}
+
+// ── Rental options editor (unchanged) ────────────────────────────────────────
 
 class _RentalOptionsEditor extends StatelessWidget {
   final List<RentalOptionModel> options;
   final void Function(List<RentalOptionModel>) onChanged;
-  const _RentalOptionsEditor({required this.options, required this.onChanged});
+  const _RentalOptionsEditor(
+      {required this.options, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -484,14 +833,15 @@ class _RentalOptionsEditor extends StatelessWidget {
       icon: Icons.calendar_month_outlined,
       children: [
         ...options.asMap().entries.map((e) {
-          final i = e.key;
+          final i   = e.key;
           final opt = e.value;
           return Padding(
             padding: context.rOnly(bottom: 8),
             child: _OptionTile(
               option: opt,
               onEdit: () async {
-                final updated = await showModalBottomSheet<RentalOptionModel>(
+                final updated =
+                    await showModalBottomSheet<RentalOptionModel>(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
@@ -513,7 +863,8 @@ class _RentalOptionsEditor extends StatelessWidget {
         }),
         TextButton.icon(
           onPressed: () async {
-            final added = await showModalBottomSheet<RentalOptionModel>(
+            final added =
+                await showModalBottomSheet<RentalOptionModel>(
               context: context,
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
@@ -533,19 +884,16 @@ class _RentalOptionsEditor extends StatelessWidget {
 class _OptionTile extends StatelessWidget {
   final RentalOptionModel option;
   final VoidCallback onEdit, onDelete;
-  const _OptionTile({
-    required this.option,
-    required this.onEdit,
-    required this.onDelete,
-  });
+  const _OptionTile(
+      {required this.option, required this.onEdit, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     final typeLabel = switch (option.type) {
-      'daily' => 'rental_daily'.tr(context),
-      'weekly' => 'rental_weekly'.tr(context),
+      'daily'   => 'rental_daily'.tr(context),
+      'weekly'  => 'rental_weekly'.tr(context),
       'monthly' => 'rental_monthly'.tr(context),
-      _ => 'rental_yearly'.tr(context),
+      _         => 'rental_yearly'.tr(context),
     };
     return Container(
       padding: context.rAll(12),
@@ -559,39 +907,30 @@ class _OptionTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(typeLabel,
+                    style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w700,
+                        fontSize: context.sp(13),
+                        color: const Color(0xFF1B2D5E))),
                 Text(
-                  typeLabel,
-                  style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.w700,
-                    fontSize: context.sp(13),
-                    color: const Color(0xFF1B2D5E),
-                  ),
-                ),
-                Text(
-                  '${option.price.toInt()} ${'currency'.tr(context)} · ${option.totalQuantity} ${'addprop_units'.tr(context)}',
+                  '${option.price.toInt()} ${'currency'.tr(context)} · '
+                  '${option.totalQuantity} ${'addprop_units'.tr(context)}',
                   style: GoogleFonts.tajawal(
-                    fontSize: context.sp(12),
-                    color: Colors.grey.shade600,
-                  ),
+                      fontSize: context.sp(12),
+                      color: Colors.grey.shade600),
                 ),
               ],
             ),
           ),
           IconButton(
             onPressed: onEdit,
-            icon: Icon(
-              Icons.edit_outlined,
-              size: context.r(18),
-              color: AppColors.primary,
-            ),
+            icon: Icon(Icons.edit_outlined,
+                size: context.r(18), color: AppColors.primary),
           ),
           IconButton(
             onPressed: onDelete,
-            icon: Icon(
-              Icons.delete_outline_rounded,
-              size: context.r(18),
-              color: AppColors.error,
-            ),
+            icon: Icon(Icons.delete_outline_rounded,
+                size: context.r(18), color: AppColors.error),
           ),
         ],
       ),
@@ -613,16 +952,13 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
   @override
   void initState() {
     super.initState();
-    _type = widget.option?.type ?? 'monthly';
+    _type      = widget.option?.type ?? 'monthly';
     _priceCtrl = TextEditingController(
-      text: widget.option?.price.toInt().toString() ?? '',
-    );
-    _qtyCtrl = TextEditingController(
-      text: widget.option?.totalQuantity.toString() ?? '1',
-    );
+        text: widget.option?.price.toInt().toString() ?? '');
+    _qtyCtrl   = TextEditingController(
+        text: widget.option?.totalQuantity.toString() ?? '1');
     _availCtrl = TextEditingController(
-      text: widget.option?.availableQuantity.toString() ?? '1',
-    );
+        text: widget.option?.availableQuantity.toString() ?? '1');
   }
 
   @override
@@ -636,36 +972,33 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(
-            top: Radius.circular(context.r(24)),
-          ),
+              top: Radius.circular(context.r(24))),
         ),
         padding: context.rAll(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'addprop_rental_option'.tr(context),
-              style: GoogleFonts.cairo(
-                fontSize: context.sp(16),
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            Text('addprop_rental_option'.tr(context),
+                style: GoogleFonts.cairo(
+                    fontSize: context.sp(16),
+                    fontWeight: FontWeight.w800)),
             SizedBox(height: context.r(16)),
             EditChipSelector<String>(
               label: 'addprop_rental_type'.tr(context),
               options: const ['daily', 'weekly', 'monthly', 'yearly'],
               selected: _type,
               labelBuilder: (v) => switch (v) {
-                'daily' => 'rental_daily'.tr(context),
-                'weekly' => 'rental_weekly'.tr(context),
+                'daily'   => 'rental_daily'.tr(context),
+                'weekly'  => 'rental_weekly'.tr(context),
                 'monthly' => 'rental_monthly'.tr(context),
-                _ => 'rental_yearly'.tr(context),
+                _         => 'rental_yearly'.tr(context),
               },
               onChanged: (v) => setState(() => _type = v),
             ),
@@ -677,7 +1010,9 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
                     controller: _priceCtrl,
                     label: 'addprop_price'.tr(context),
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly
+                    ],
                   ),
                 ),
                 SizedBox(width: context.r(10)),
@@ -686,7 +1021,9 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
                     controller: _qtyCtrl,
                     label: 'addprop_units'.tr(context),
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly
+                    ],
                   ),
                 ),
               ],
@@ -709,11 +1046,13 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
                       id: widget.option?.id ?? '',
                       type: _type,
                       price: double.tryParse(_priceCtrl.text) ?? 0,
-                      totalQuantity: int.tryParse(_qtyCtrl.text) ?? 1,
-                      availableQuantity: int.tryParse(_availCtrl.text) ?? 1,
-                      propertyId:
-                          widget.option?.propertyId ??
-                          Supabase.instance.client.auth.currentUser?.id ??
+                      totalQuantity:
+                          int.tryParse(_qtyCtrl.text) ?? 1,
+                      availableQuantity:
+                          int.tryParse(_availCtrl.text) ?? 1,
+                      propertyId: widget.option?.propertyId ??
+                          Supabase.instance.client.auth.currentUser
+                              ?.id ??
                           '',
                     ),
                   );
@@ -722,14 +1061,13 @@ class _RentalOptionSheetState extends State<_RentalOptionSheet> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(context.r(14)),
-                  ),
+                      borderRadius:
+                          BorderRadius.circular(context.r(14))),
                   padding: context.rSymmetric(vertical: 14),
                 ),
-                child: Text(
-                  'btnsave'.tr(context),
-                  style: GoogleFonts.cairo(fontWeight: FontWeight.w800),
-                ),
+                child: Text('btnsave'.tr(context),
+                    style:
+                        GoogleFonts.cairo(fontWeight: FontWeight.w800)),
               ),
             ),
           ],

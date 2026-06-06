@@ -65,7 +65,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     try {
       final uid = _db.auth.currentUser?.id;
       if (uid == null) {
-        emit(NotificationCenterError('not_signed_in'));
+        if (!isClosed) emit(NotificationCenterError('not_signed_in'));
         return;
       }
 
@@ -76,6 +76,8 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
           .order('sent_at', ascending: false)
           .range(offset, offset + _pageSize - 1);
 
+      if (isClosed) return; // cubit was closed while awaiting — do nothing
+
       final fetched = (rows as List)
           .map((r) => NotificationLogModel.fromMap(r))
           .toList();
@@ -84,11 +86,12 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
       _emitLoaded(fetched.length == _pageSize);
     } catch (e) {
       debugPrint('[NotifCenter] fetch error: $e');
-      if (isFirstLoad) emit(NotificationCenterError(e.toString()));
+      if (!isClosed && isFirstLoad) emit(NotificationCenterError(e.toString()));
     }
   }
 
   void _emitLoaded(bool hasMore) {
+    if (isClosed) return;
     emit(
       NotificationCenterLoaded(
         items: List.unmodifiable(_items),
@@ -105,7 +108,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     if (idx == -1 || _items[idx].isRead) return;
 
     _items[idx] = _items[idx].copyWith(isRead: true);
-    if (state is NotificationCenterLoaded) {
+    if (!isClosed && state is NotificationCenterLoaded) {
       _emitLoaded((state as NotificationCenterLoaded).hasMore);
     }
 
@@ -125,7 +128,7 @@ class NotificationCenterCubit extends Cubit<NotificationCenterState> {
     for (var i = 0; i < _items.length; i++) {
       _items[i] = _items[i].copyWith(isRead: true);
     }
-    if (state is NotificationCenterLoaded) {
+    if (!isClosed && state is NotificationCenterLoaded) {
       _emitLoaded((state as NotificationCenterLoaded).hasMore);
     }
 

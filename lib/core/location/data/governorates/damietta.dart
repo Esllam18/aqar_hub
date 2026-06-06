@@ -5,11 +5,11 @@ const EgyptLocationNode damiettaGovernorate = EgyptLocationNode(
   slug: 'damietta',
   enName: 'Damietta',
   arName: 'دمياط',
-  aliases: ['damietta', 'دمياط', 'دميات'],
+  aliases: ['damietta', 'دمياط'],
   children: [
-    EgyptLocationNode(slug: 'new-damietta', enName: 'New Damietta', arName: 'دمياط الجديدة', aliases: ['new damietta', 'دمياط الجديدة']),
+    EgyptLocationNode(slug: 'new_damietta', enName: 'New Damietta', arName: 'دمياط الجديدة', aliases: ['new damietta', 'دمياط الجديدة', 'new-damietta']),
     EgyptLocationNode(slug: 'faraskour', enName: 'Faraskour', arName: 'فارسكور', aliases: ['faraskour', 'فارسكور']),
     EgyptLocationNode(slug: 'zarqa', enName: 'Zarqa', arName: 'الزرقا', aliases: ['zarqa', 'الزرقا']),
-    EgyptLocationNode(slug: 'kafr-el-battikh', enName: 'Kafr El Battikh', arName: 'كفر البطيخ', aliases: ['kafr el battikh', 'كفر البطيخ']),
+    EgyptLocationNode(slug: 'kafr_el_battikh', enName: 'Kafr El Battikh', arName: 'كفر البطيخ', aliases: ['kafr el battikh', 'كفر البطيخ', 'kafr-el-battikh']),
   ],
 );

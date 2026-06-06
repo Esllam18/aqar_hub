@@ -1,11 +1,14 @@
 // lib/features/owner/home/presentation/widgets/owner_home/dashboard/owner_alerts_section.dart
 //
-// Standalone alerts section — shown above properties list, not inside cards.
-// Gives clear guidance to the owner about properties needing attention.
+// FIX: _AlertRow is now tappable. Tapping navigates to PropertyDetailsView
+//      using the same pattern as OwnerCommentsSection._openProperty().
 
 import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
+import 'package:aqar_hub/features/house_seeker/home/data/datasources/property_datasource_impl.dart';
+import 'package:aqar_hub/features/house_seeker/home/data/repositories/property_repository_impl.dart';
+import 'package:aqar_hub/features/house_seeker/home/presentation/views/property_details_view.dart';
 import 'package:aqar_hub/features/owner/home/data/models/owner_property_model.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -22,7 +25,6 @@ class OwnerAlertsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Collect all properties with alerts
     final alertProps = properties
         .where((p) => p.alerts.any((a) => a.code != 'available'))
         .toList();
@@ -58,8 +60,11 @@ class OwnerAlertsSection extends StatelessWidget {
                     color: AppColors.warning.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(context.r(10)),
                   ),
-                  child: Icon(Icons.notifications_active_rounded,
-                      color: AppColors.warning, size: context.r(20)),
+                  child: Icon(
+                    Icons.notifications_active_rounded,
+                    color: AppColors.warning,
+                    size: context.r(20),
+                  ),
                 ),
                 SizedBox(width: context.r(10)),
                 Expanded(
@@ -99,10 +104,8 @@ class OwnerAlertsSection extends StatelessWidget {
             ),
           ),
           const Divider(height: 1, thickness: 0.5),
-          // Alert rows — max 3 shown
-          ...alertProps.take(3).map(
-                (p) => _AlertRow(property: p),
-              ),
+          // Alert rows — max 3 shown, each tappable
+          ...alertProps.take(3).map((p) => _AlertRow(property: p)),
           if (alertProps.length > 3)
             Padding(
               padding: context.rOnly(left: 16, right: 16, bottom: 12, top: 4),
@@ -121,9 +124,28 @@ class OwnerAlertsSection extends StatelessWidget {
   }
 }
 
+// ── Alert row — now tappable ──────────────────────────────────────────────────
+
 class _AlertRow extends StatelessWidget {
   final OwnerPropertyModel property;
   const _AlertRow({required this.property});
+
+  // ── FIX: same pattern as OwnerCommentsSection._openProperty ──────────────
+  Future<void> _openProperty(BuildContext context) async {
+    try {
+      final repo = PropertyRepositoryImpl(PropertyDatasourceImpl());
+      final fetched = await repo.getPropertyById(property.id);
+      if (fetched == null || !context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PropertyDetailsView(property: fetched),
+        ),
+      );
+    } catch (e) {
+      debugPrint('[OwnerAlertsSection] _openProperty error: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,41 +172,51 @@ class _AlertRow extends StatelessWidget {
         icon = Icons.info_outline_rounded;
     }
 
-    return Padding(
-      padding: context.rOnly(left: 16, right: 16, top: 10, bottom: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: context.r(16), color: color),
-          SizedBox(width: context.r(8)),
-          Expanded(
-            child: Text(
-              property.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.tajawal(
-                fontSize: context.sp(12.5),
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1B2D5E),
+    return InkWell(
+      onTap: () => _openProperty(context),
+      borderRadius: BorderRadius.circular(context.r(8)),
+      child: Padding(
+        padding: context.rOnly(left: 16, right: 16, top: 10, bottom: 10),
+        child: Row(
+          children: [
+            Icon(icon, size: context.r(16), color: color),
+            SizedBox(width: context.r(8)),
+            Expanded(
+              child: Text(
+                property.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.tajawal(
+                  fontSize: context.sp(12.5),
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1B2D5E),
+                ),
               ),
             ),
-          ),
-          SizedBox(width: context.r(8)),
-          Container(
-            padding: context.rSymmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(context.r(8)),
-            ),
-            child: Text(
-              '${alerts.length} ${'owner_alerts_issues'.tr(context)}',
-              style: GoogleFonts.tajawal(
-                fontSize: context.sp(10),
-                color: color,
-                fontWeight: FontWeight.w700,
+            SizedBox(width: context.r(8)),
+            Container(
+              padding: context.rSymmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(context.r(8)),
+              ),
+              child: Text(
+                '${alerts.length} ${'owner_alerts_issues'.tr(context)}',
+                style: GoogleFonts.tajawal(
+                  fontSize: context.sp(10),
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-          ),
-        ],
+            SizedBox(width: context.r(4)),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: context.r(16),
+              color: Colors.grey.shade400,
+            ),
+          ],
+        ),
       ),
     );
   }

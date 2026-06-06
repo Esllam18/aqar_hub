@@ -9,6 +9,7 @@ import 'package:aqar_hub/core/constants/app_colors.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:aqar_hub/features/house_seeker/home/helpers/property_helpers.dart';
+import 'package:aqar_hub/core/location/helper/location_display_helper.dart';
 import 'package:aqar_hub/features/owner/home/data/models/owner_property_model.dart';
 import 'package:aqar_hub/features/owner/home/data/models/rental_option_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -175,6 +176,13 @@ class CardLocationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locLabel = LocationDisplayHelper.fullLabel(
+      context: context,
+      address: property.address,
+      governorateSlug: property.governorateSlug,
+      citySlug: property.citySlug,
+      areaSlug: property.areaSlug,
+    );
     return Row(
       children: [
         Icon(Icons.location_on_outlined,
@@ -182,9 +190,7 @@ class CardLocationRow extends StatelessWidget {
         SizedBox(width: context.r(5)),
         Expanded(
           child: Text(
-            property.address.isNotEmpty
-                ? '${property.address}, ${property.city}'
-                : property.city,
+            locLabel,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.tajawal(

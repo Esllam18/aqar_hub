@@ -5,25 +5,25 @@ const EgyptLocationNode beniSuefGovernorate = EgyptLocationNode(
   slug: 'beni_suef',
   enName: 'Beni Suef',
   arName: 'بني سويف',
-  aliases: ['beni suef', 'bani suef', 'بني سويف', 'بنى سويف', 'beni_suef'],
+  aliases: ['beni suef', 'bani suef', 'بني سويف', 'بنى سويف', 'beni_suef', 'beni-suef'],
   children: [
     EgyptLocationNode(
-      slug: 'beni-suef-city',
+      slug: 'beni_suef_city',
       enName: 'Beni Suef City',
       arName: 'مدينة بني سويف',
-      aliases: ['beni suef city', 'مدينة بني سويف', 'وسط بني سويف'],
+      aliases: ['beni suef city', 'مدينة بني سويف', 'وسط بني سويف', 'beni-suef-city'],
     ),
     EgyptLocationNode(
-      slug: 'hay-awal',
+      slug: 'hay_awal',
       enName: 'First District',
       arName: 'الحي الأول',
-      aliases: ['hay awal', 'الحي الأول', 'الحى الاول', 'first district'],
+      aliases: ['hay awal', 'الحي الأول', 'الحى الاول', 'first district', 'hay-awal'],
     ),
     EgyptLocationNode(
-      slug: 'nile-corniche',
+      slug: 'nile_corniche',
       enName: 'Nile Corniche',
       arName: 'كورنيش النيل',
-      aliases: ['nile corniche', 'كورنيش النيل', 'الكورنيش'],
+      aliases: ['nile corniche', 'كورنيش النيل', 'الكورنيش', 'nile-corniche'],
     ),
     EgyptLocationNode(
       slug: 'nahda',
@@ -44,10 +44,10 @@ const EgyptLocationNode beniSuefGovernorate = EgyptLocationNode(
       aliases: ['ihnasya', 'إهناسيا'],
     ),
     EgyptLocationNode(
-      slug: 'nasser-city',
+      slug: 'nasser_city',
       enName: 'Nasser City',
       arName: 'حي ناصر',
-      aliases: ['nasser city', 'حي ناصر', 'ناصر'],
+      aliases: ['nasser city', 'حي ناصر', 'ناصر', 'nasser-city'],
     ),
     EgyptLocationNode(
       slug: 'shabaab',

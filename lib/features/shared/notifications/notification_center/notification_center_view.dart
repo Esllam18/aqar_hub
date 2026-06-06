@@ -71,6 +71,13 @@ class _NotificationCenterBodyState extends State<_NotificationCenterBody> {
             color: const Color(0xFF1B2D5E),
           ),
         ),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF1B2D5E),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           BlocBuilder<NotificationCenterCubit, NotificationCenterState>(
             builder: (ctx, state) {

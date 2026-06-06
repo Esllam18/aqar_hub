@@ -32,8 +32,7 @@ class CommentList extends StatelessWidget {
         ...comments.map((c) => CommentItem(key: ValueKey(c.id), comment: c)),
 
         // Load more
-        if (hasMore)
-          _LoadMoreButton(loading: loadingMore),
+        if (hasMore) _LoadMoreButton(loading: loadingMore),
 
         // End spacer
         SizedBox(height: context.r(8)),
@@ -66,6 +65,7 @@ class _LoadMoreButton extends StatelessWidget {
               child: Container(
                 padding: context.rSymmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: AppColors.primary.withOpacity(0.07),
                   borderRadius: BorderRadius.circular(context.r(10)),
                 ),

@@ -23,8 +23,11 @@ import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:aqar_hub/features/owner/owner_sale/presentation/cubit/owner_home_state.dart';
 import 'package:aqar_hub/features/shared/notifications/notification_center/notification_center_cubit.dart';
 import 'package:aqar_hub/features/shared/notifications/notification_center/notification_center_view.dart';
+import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OwnerHomeView extends StatelessWidget {
   const OwnerHomeView({super.key});
@@ -52,13 +55,14 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
 
   List<OwnerPropertyModel> _applyFilter(List<OwnerPropertyModel> list) {
     return switch (_filter) {
+      // Properties-only tabs — pure filtering, NO alerts/comments mixed in
       OwnerHomeFilter.all => list.toList(),
       OwnerHomeFilter.rent =>
         list.where((e) => e.listingType == 'rent').toList(),
       OwnerHomeFilter.sale =>
         list.where((e) => e.listingType == 'sale').toList(),
-      OwnerHomeFilter.attention =>
-        list.where((e) => e.alerts.any((a) => a.code != 'available')).toList(),
+      // Notifications tab — properties list is intentionally NOT shown here
+      OwnerHomeFilter.notificationsAndComments => [],
     };
   }
 
@@ -82,6 +86,10 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
               ? []
               : _applyFilter(all);
 
+          // Is the current tab the notification+comments tab?
+          final isNotifTab =
+              _filter == OwnerHomeFilter.notificationsAndComments;
+
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: context.read<OwnerHomeCubit>().refresh,
@@ -90,8 +98,10 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                 parent: BouncingScrollPhysics(),
               ),
               slivers: [
-                SliverToBoxAdapter(child: _DashboardTop(state: state)),
+                // ── Premium hero header ────────────────────────────────
+                SliverToBoxAdapter(child: _OwnerHeroHeader(state: state)),
 
+                // ── Revenue banner + quick actions (always visible) ────
                 if (loaded != null) ...[
                   SliverToBoxAdapter(
                     child: OwnerRevenueBanner(
@@ -101,12 +111,15 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                   ),
                   SliverToBoxAdapter(
                     child: OwnerQuickActions(
-                      onAlertsTap: () =>
-                          setState(() => _filter = OwnerHomeFilter.attention),
+                      onAlertsTap: () => setState(
+                        () =>
+                            _filter = OwnerHomeFilter.notificationsAndComments,
+                      ),
                     ),
                   ),
                 ],
 
+                // ── Section header + filter bar ────────────────────────
                 SliverToBoxAdapter(
                   child: _FilterSection(
                     selected: _filter,
@@ -115,55 +128,83 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
                   ),
                 ),
 
-                if (loaded != null)
-                  SliverToBoxAdapter(
-                    child: OwnerActivityTip(
-                      total: loaded.totalCount,
-                      alerts: loaded.alertsCount,
-                      available: loaded.availableCount,
+                // ════════════════════════════════════════════════════════
+                // NOTIFICATIONS & COMMENTS TAB — dedicated content only
+                // ════════════════════════════════════════════════════════
+                if (isNotifTab) ...[
+                  if (loaded != null) ...[
+                    // Alerts section
+                    if (loaded.alertsCount > 0)
+                      SliverToBoxAdapter(
+                        child: OwnerAlertsSection(
+                          properties: loaded.properties,
+                          onViewAll: () {},
+                        ),
+                      ),
+                    // Comments section
+                    const SliverToBoxAdapter(child: OwnerCommentsSection()),
+                    // Empty message if nothing to show
+                    if (loaded.alertsCount == 0)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _NotifTabEmptyState(),
+                      ),
+                  ] else if (state is OwnerHomeLoading)
+                    _LoadingSliver()
+                  else if (state is OwnerHomeError)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: OwnerErrorView(
+                        message: state.message,
+                        onRetry: context.read<OwnerHomeCubit>().load,
+                      ),
                     ),
-                  ),
 
-                if (loaded != null && loaded.alertsCount > 0)
-                  SliverToBoxAdapter(
-                    child: OwnerAlertsSection(
-                      properties: loaded.properties,
-                      onViewAll: () =>
-                          setState(() => _filter = OwnerHomeFilter.attention),
+                  SliverToBoxAdapter(child: SizedBox(height: context.r(150))),
+                ]
+                // ════════════════════════════════════════════════════════
+                // PROPERTIES TABS — only property cards, no notifications
+                // ════════════════════════════════════════════════════════
+                else ...[
+                  // Activity tip (only on all/rent/sale tabs)
+                  if (loaded != null)
+                    SliverToBoxAdapter(
+                      child: OwnerActivityTip(
+                        total: loaded.totalCount,
+                        alerts: loaded.alertsCount,
+                        available: loaded.availableCount,
+                      ),
                     ),
-                  ),
 
-                // Comments on owner's properties
-                if (loaded != null)
-                  const SliverToBoxAdapter(child: OwnerCommentsSection()),
-
-                if (state is OwnerHomeLoading)
-                  _LoadingSliver()
-                else if (state is OwnerHomeError)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: OwnerErrorView(
-                      message: state.message,
-                      onRetry: context.read<OwnerHomeCubit>().load,
-                    ),
-                  )
-                else if (loaded != null && all.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: OwnerEmptyState(
-                      onAddTap: () => Navigation.to(const AddPropertyView()),
-                    ),
-                  )
-                else if (loaded != null && filtered.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: OwnerEmptyState(
-                      isFilterEmpty: true,
-                      filterName: _filter,
-                    ),
-                  )
-                else
-                  _PropertyList(properties: filtered, onEdit: _openEdit),
+                  // States
+                  if (state is OwnerHomeLoading)
+                    _LoadingSliver()
+                  else if (state is OwnerHomeError)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: OwnerErrorView(
+                        message: state.message,
+                        onRetry: context.read<OwnerHomeCubit>().load,
+                      ),
+                    )
+                  else if (loaded != null && all.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: OwnerEmptyState(
+                        onAddTap: () => Navigation.to(const AddPropertyView()),
+                      ),
+                    )
+                  else if (loaded != null && filtered.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: OwnerEmptyState(
+                        isFilterEmpty: true,
+                        filterName: _filter,
+                      ),
+                    )
+                  else
+                    _PropertyList(properties: filtered, onEdit: _openEdit),
+                ],
               ],
             ),
           );
@@ -173,147 +214,255 @@ class _OwnerHomeContentState extends State<_OwnerHomeContent> {
   }
 }
 
-// ── Dashboard top ─────────────────────────────────────────────────────────────
+// ── Premium hero header ───────────────────────────────────────────────────────
 
-class _DashboardTop extends StatelessWidget {
+class _OwnerHeroHeader extends StatelessWidget {
   final OwnerHomeState state;
-  const _DashboardTop({required this.state});
+  const _OwnerHeroHeader({required this.state});
+
+  String _greeting(BuildContext context) {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'greeting_morning'.tr(context);
+    if (h < 17) return 'greeting_afternoon'.tr(context);
+    return 'greeting_evening'.tr(context);
+  }
+
+  String _ownerFirstName() {
+    final meta = Supabase.instance.client.auth.currentUser?.userMetadata ?? {};
+    final first = (meta['first_name'] as String? ?? '').trim();
+    return first.isNotEmpty ? first : '';
+  }
+
+  String _todayLabel() {
+    final now = DateTime.now();
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${now.day} ${months[now.month]} ${now.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final loaded = state is OwnerHomeLoaded ? state as OwnerHomeLoaded : null;
+    final name = _ownerFirstName();
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF163F7A), Color(0xFF1E88E5)],
+          colors: [Color(0xFF102848), Color(0xFF1E5FAD)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
         ),
       ),
       child: SafeArea(
         bottom: false,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _OwnerAppBar(),
+            // ── Top bar: greeting + bell ────────────────────────────────
+            Padding(
+              padding: context.rOnly(left: 20, right: 16, top: 16, bottom: 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Greeting line
+                        Row(
+                          children: [
+                            _greetingIcon(context),
+                            SizedBox(width: context.r(8)),
+                            Expanded(
+                              child: Text(
+                                name.isNotEmpty
+                                    ? '${_greeting(context)}، $name'
+                                    : _greeting(context),
+                                style: GoogleFonts.cairo(
+                                  fontSize: context.sp(17),
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: context.r(4)),
+                        // Subtitle
+                        Text(
+                          'owner_hero_subtitle'.tr(context),
+                          style: GoogleFonts.tajawal(
+                            fontSize: context.sp(12),
+                            color: Colors.white.withOpacity(0.78),
+                            height: 1.5,
+                          ),
+                        ),
+                        SizedBox(height: context.r(6)),
+                        // Date chip
+                        Container(
+                          padding: context.rSymmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(context.r(20)),
+                          ),
+                          child: Text(
+                            _todayLabel(),
+                            style: GoogleFonts.tajawal(
+                              fontSize: context.sp(10.5),
+                              color: Colors.white.withOpacity(0.85),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: context.r(12)),
+                  // Notification bell
+                  _NotificationBell(),
+                ],
+              ),
+            ),
+
+            SizedBox(height: context.r(20)),
+
+            // ── KPI cards ───────────────────────────────────────────────
             OwnerKpiRow(
               total: loaded?.totalCount ?? 0,
               available: loaded?.availableCount ?? 0,
               rented: loaded?.rentedCount ?? 0,
               sale: loaded?.saleCount ?? 0,
             ),
-            const SizedBox(height: 16),
+
+            SizedBox(height: context.r(20)),
           ],
         ),
       ),
     );
   }
+
+  Widget _greetingIcon(BuildContext context) {
+    final h = DateTime.now().hour;
+    final icon = h < 12
+        ? Icons.wb_sunny_rounded
+        : h < 17
+        ? Icons.wb_cloudy_rounded
+        : Icons.nightlight_round;
+    final color = h < 12
+        ? const Color(0xFFFFD54F)
+        : h < 17
+        ? const Color(0xFF90CAF9)
+        : const Color(0xFFB39DDB);
+
+    return Container(
+      width: context.r(32),
+      height: context.r(32),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(context.r(9)),
+      ),
+      child: Icon(icon, size: context.r(18), color: color),
+    );
+  }
 }
 
-// ── Owner App Bar — bell replaces refresh icon ────────────────────────────────
+// ── Notification bell with badge ──────────────────────────────────────────────
 
-class _OwnerAppBar extends StatelessWidget {
+class _NotificationBell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.dashboard_customize_rounded,
-            color: Colors.white,
-            size: 22,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'nav_dashboard'.tr(context),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          // ── Notification bell with badge ─────────────────────────────
-          BlocBuilder<NotificationCenterCubit, NotificationCenterState>(
-            builder: (ctx, notifState) {
-              final unread = notifState is NotificationCenterLoaded
-                  ? notifState.unreadCount
-                  : 0;
-              return GestureDetector(
-                onTap: () =>
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => BlocProvider.value(
-                          value: ctx.read<NotificationCenterCubit>(),
-                          child: NotificationCenterView(onSwitchTab: (_) {}),
-                        ),
-                      ),
-                    ).then((_) {
-                      // Refresh count after coming back from notification center
-                      ctx.read<NotificationCenterCubit>().load();
-                    }),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.25),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_outlined,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                    if (unread > 0)
-                      Positioned(
-                        top: -4,
-                        right: -4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4.5,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white, width: 1.5),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            unread > 99 ? '99+' : '$unread',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              height: 1.1,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
+    return BlocBuilder<NotificationCenterCubit, NotificationCenterState>(
+      builder: (ctx, notifState) {
+        final unread = notifState is NotificationCenterLoaded
+            ? notifState.unreadCount
+            : 0;
+        return GestureDetector(
+          onTap: () =>
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: ctx.read<NotificationCenterCubit>(),
+                    child: NotificationCenterView(onSwitchTab: (_) {}),
+                  ),
                 ),
-              );
-            },
+              ).then((_) {
+                // ignore: use_build_context_synchronously
+                ctx.read<NotificationCenterCubit>().load();
+              }),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: context.r(44),
+                height: context.r(44),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(context.r(13)),
+                  border: Border.all(color: Colors.white.withOpacity(0.22)),
+                ),
+                child: Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white,
+                  size: context.r(22),
+                ),
+              ),
+              if (unread > 0)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4.5,
+                      vertical: 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      unread > 99 ? '99+' : '$unread',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -338,12 +487,12 @@ class _FilterSection extends StatelessWidget {
       children: [
         OwnerSectionHeader(title: title),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: context.rSymmetric(horizontal: 16, vertical: 4),
           child: Material(
             color: Colors.white,
             elevation: 1,
             shadowColor: Colors.black.withOpacity(0.04),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(context.r(18)),
             child: Padding(
               padding: const EdgeInsets.all(6),
               child: OwnerFiltersBar(selected: selected, onChanged: onChanged),
@@ -355,19 +504,76 @@ class _FilterSection extends StatelessWidget {
   }
 }
 
+// ── Notification tab empty state ──────────────────────────────────────────────
+
+class _NotifTabEmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: context.rOnly(left: 16, right: 16, top: 4, bottom: 120),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 80),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: context.r(76),
+                height: context.r(76),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_outline_rounded,
+                  size: context.r(36),
+                  color: AppColors.success,
+                ),
+              ),
+              SizedBox(height: context.r(18)),
+              Text(
+                'owner_notif_tab_empty_title'.tr(context),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(
+                  fontSize: context.sp(16),
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1B2D5E),
+                ),
+              ),
+              SizedBox(height: context.r(8)),
+              Text(
+                'owner_notif_tab_empty_subtitle'.tr(context),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.tajawal(
+                  fontSize: context.sp(13),
+                  color: Colors.grey.shade500,
+                  height: 1.55,
+                ),
+              ),
+              SizedBox(height: context.r(24)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Loading skeleton ──────────────────────────────────────────────────────────
+
 class _LoadingSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+      padding: context.rOnly(left: 16, right: 16, top: 4, bottom: 120),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (_, __) => Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            height: 200,
+            margin: context.rOnly(bottom: 14),
+            height: context.r(200),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(context.r(18)),
             ),
           ),
           childCount: 4,
@@ -376,6 +582,8 @@ class _LoadingSliver extends StatelessWidget {
     );
   }
 }
+
+// ── Property list ─────────────────────────────────────────────────────────────
 
 class _PropertyList extends StatelessWidget {
   final List<OwnerPropertyModel> properties;
@@ -387,12 +595,12 @@ class _PropertyList extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<OwnerHomeCubit>();
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+      padding: context.rOnly(left: 16, right: 16, top: 4, bottom: 120),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((ctx, i) {
           final p = properties[i];
           return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
+            padding: context.rOnly(bottom: 15),
             child: OwnerPropertyCard(
               property: p,
               index: i,

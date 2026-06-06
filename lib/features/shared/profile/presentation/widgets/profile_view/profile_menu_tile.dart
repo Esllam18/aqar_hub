@@ -69,7 +69,7 @@ class ProfileMenuTile extends StatelessWidget {
                     Icon(
                       // ✅ Correct chevron direction per locale
                       isRtl
-                          ? Icons.arrow_back_ios_new_rounded
+                          ? Icons.arrow_forward_ios_rounded
                           : Icons.arrow_forward_ios_rounded,
                       size: context.r(13),
                       color: Colors.grey.shade400,

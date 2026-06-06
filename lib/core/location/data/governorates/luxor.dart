@@ -5,9 +5,9 @@ const EgyptLocationNode luxorGovernorate = EgyptLocationNode(
   slug: 'luxor',
   enName: 'Luxor',
   arName: 'الأقصر',
-  aliases: ['luxor', 'الأقصر', 'الاقصر', 'el uqsur'],
+  aliases: ['luxor', 'الأقصر', 'الاقصر'],
   children: [
-    EgyptLocationNode(slug: 'luxor-city', enName: 'Luxor City', arName: 'مدينة الأقصر', aliases: ['luxor city', 'مدينة الأقصر']),
+    EgyptLocationNode(slug: 'luxor_city', enName: 'Luxor City', arName: 'مدينة الأقصر', aliases: ['luxor city', 'مدينة الأقصر', 'luxor-city']),
     EgyptLocationNode(slug: 'karnak', enName: 'Karnak', arName: 'الكرنك', aliases: ['karnak', 'الكرنك']),
     EgyptLocationNode(slug: 'esna', enName: 'Esna', arName: 'إسنا', aliases: ['esna', 'إسنا']),
     EgyptLocationNode(slug: 'armant', enName: 'Armant', arName: 'إرمنت', aliases: ['armant', 'إرمنت']),

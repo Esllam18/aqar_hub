@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/property_model.dart';
+import 'package:aqar_hub/core/location/helper/location_display_helper.dart';
 
 class PropertyCard extends StatelessWidget {
   final PropertyModel property;
@@ -276,9 +277,13 @@ class _DetailsSection extends StatelessWidget {
               SizedBox(width: context.r(3)),
               Expanded(
                 child: Text(
-                  property.address.isNotEmpty
-                      ? '${property.address}, ${property.city}'
-                      : property.city,
+                  LocationDisplayHelper.fullLabel(
+                    context: context,
+                    address: property.address,
+                    governorateSlug: property.governorateSlug,
+                    citySlug: property.citySlug,
+                    areaSlug: property.areaSlug,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.tajawal(

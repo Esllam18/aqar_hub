@@ -1,14 +1,21 @@
 // lib/features/owner/analytics/presentation/view/owner_analytics_view.dart
 //
-// Full Owner Analytics / Statistics screen.
-// Data is fetched directly from Supabase properties + rental_options.
-// No external chart library required — all charts are drawn with CustomPaint.
+// Full Owner Analytics / Statistics screen — Premium Redesign.
+//
+// CHANGES vs original:
+//  1. LOCATION FIX: _CityList resolves byCity keys (slugs or "gov/city" paths)
+//     to localised names via EgyptLocationHelper instead of showing raw slugs.
+//  2. UI: Full premium glassmorphism redesign — gradient backgrounds, frosted
+//     glass cards, animated progress bars, modern typography hierarchy.
+//     All existing logic (cubit, data model, charts) is preserved unchanged.
 
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: unused_field, deprecated_member_use
 
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:aqar_hub/core/constants/app_colors.dart';
+import 'package:aqar_hub/core/location/helper/egypt_location_helper.dart';
 import 'package:aqar_hub/core/localization/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:aqar_hub/core/services/responsive/responsive_extension.dart';
@@ -16,6 +23,24 @@ import 'package:aqar_hub/features/owner/analytics/presentation/cubit/owner_analy
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+// ── Design tokens ─────────────────────────────────────────────────────────────
+
+class _C {
+  static const navy = Color(0xFF0D1B3E);
+  static const navyMid = Color(0xFF1A3267);
+  static const blue = Color(0xFF1E5FAD);
+  static const blueLight = Color(0xFF4A90D9);
+  static const glass = Color(0x1AFFFFFF);
+  static const glassBorder = Color(0x33FFFFFF);
+  static const cardBg = Color(0xFFF8FAFF);
+  static const cardBorder = Color(0xFFE8EEFF);
+  static const success = Color(0xFF10B981);
+  static const warning = Color(0xFFF59E0B);
+  static const purple = Color(0xFF8B5CF6);
+  static const pink = Color(0xFFEC4899);
+  static const info = Color(0xFF0EA5E9);
+}
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
@@ -39,11 +64,15 @@ class _AnalyticsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF0F4FF),
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+        ),
         title: Text(
           'analytics_title'.tr(context),
           style: GoogleFonts.cairo(
@@ -52,6 +81,7 @@ class _AnalyticsContent extends StatelessWidget {
             color: Colors.white,
           ),
         ),
+
         actions: [
           BlocBuilder<OwnerAnalyticsCubit, OwnerAnalyticsState>(
             builder: (context, state) => IconButton(
@@ -82,20 +112,29 @@ class _LoadingBody extends StatelessWidget {
   const _LoadingBody();
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const CircularProgressIndicator(color: AppColors.primary),
-        SizedBox(height: context.r(14)),
-        Text(
-          'analytics_loading'.tr(context),
-          style: GoogleFonts.tajawal(
-            fontSize: context.sp(13),
-            color: AppColors.textSecondary,
+  Widget build(BuildContext context) => Container(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [_C.navy, _C.blue],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    ),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          SizedBox(height: context.r(16)),
+          Text(
+            'analytics_loading'.tr(context),
+            style: GoogleFonts.tajawal(
+              fontSize: context.sp(13),
+              color: Colors.white70,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
@@ -113,12 +152,20 @@ class _ErrorBody extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: context.r(48),
-            color: AppColors.error,
+          Container(
+            width: context.r(72),
+            height: context.r(72),
+            decoration: BoxDecoration(
+              color: AppColors.error.withOpacity(0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.error_outline_rounded,
+              size: context.r(36),
+              color: AppColors.error,
+            ),
           ),
-          SizedBox(height: context.r(12)),
+          SizedBox(height: context.r(16)),
           Text(
             message,
             textAlign: TextAlign.center,
@@ -158,84 +205,111 @@ class _LoadedBody extends StatelessWidget {
     return v.toStringAsFixed(0);
   }
 
+  Color _typeColor(String type) => switch (type) {
+    'apartment' => _C.blue,
+    'villa' => _C.success,
+    'studio' => _C.info,
+    'penthouse' => _C.purple,
+    'duplex' => _C.warning,
+    'chalet' => _C.pink,
+    _ => AppColors.textSecondary,
+  };
+
   @override
   Widget build(BuildContext context) {
-    if (data.totalProperties == 0) {
-      return _EmptyAnalytics();
-    }
+    if (data.totalProperties == 0) return const _EmptyAnalytics();
 
     return RefreshIndicator(
-      color: AppColors.primary,
+      color: _C.blue,
       onRefresh: () => context.read<OwnerAnalyticsCubit>().refresh(),
-      child: ListView(
-        padding: context.rOnly(bottom: 40),
-        children: [
-          // ── Hero Banner ─────────────────────────────────────────────────
-          _HeroBanner(data: data, formatPrice: _fmt),
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        slivers: [
+          // ── Gradient App Bar + Hero ──────────────────────────────────
+          SliverToBoxAdapter(
+            child: _GradientHero(data: data, formatPrice: _fmt),
+          ),
 
-          // ── KPI Grid ────────────────────────────────────────────────────
-          _SectionTitle(title: 'analytics_overview'.tr(context)),
-          _KpiGrid(data: data),
+          // ── Overview KPI Grid ────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _SectionLabel(title: 'analytics_overview'.tr(context)),
+          ),
+          SliverToBoxAdapter(child: _KpiGrid(data: data)),
 
-          // ── Listing Type Split ───────────────────────────────────────────
-          _SectionTitle(title: 'analytics_listing_split'.tr(context)),
-          _ListingTypeSplit(data: data),
+          // ── Listing Type Split ───────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _SectionLabel(title: 'analytics_listing_split'.tr(context)),
+          ),
+          SliverToBoxAdapter(child: _ListingTypeSplit(data: data)),
 
-          // ── Monthly Trend ────────────────────────────────────────────────
-          _SectionTitle(title: 'analytics_monthly_trend'.tr(context)),
-          _MonthlyBarChart(months: data.listingsByMonth),
+          // ── Monthly Trend ────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _SectionLabel(title: 'analytics_monthly_trend'.tr(context)),
+          ),
+          SliverToBoxAdapter(
+            child: _MonthlyBarChart(months: data.listingsByMonth),
+          ),
 
-          // ── Property Type Breakdown ──────────────────────────────────────
+          // ── Property Type Donut ──────────────────────────────────────
           if (data.byPropertyType.isNotEmpty) ...[
-            _SectionTitle(title: 'analytics_property_types'.tr(context)),
-            _DonutChart(
-              items: data.byPropertyType.entries
-                  .map(
-                    (e) => _PieSlice(
-                      label: 'property_type_${e.key}'.tr(context),
-                      value: e.value.toDouble(),
-                      color: _typeColor(e.key),
-                    ),
-                  )
-                  .toList(),
+            SliverToBoxAdapter(
+              child: _SectionLabel(
+                title: 'analytics_property_types'.tr(context),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: _DonutChart(
+                items: data.byPropertyType.entries
+                    .map(
+                      (e) => _PieSlice(
+                        label: 'property_type_${e.key}'.tr(context),
+                        value: e.value.toDouble(),
+                        color: _typeColor(e.key),
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
           ],
 
-          // ── City Breakdown ───────────────────────────────────────────────
+          // ── City Breakdown ───────────────────────────────────────────
           if (data.byCity.isNotEmpty) ...[
-            _SectionTitle(title: 'analytics_by_city'.tr(context)),
-            _CityList(byCity: data.byCity, total: data.totalProperties),
+            SliverToBoxAdapter(
+              child: _SectionLabel(title: 'analytics_by_city'.tr(context)),
+            ),
+            SliverToBoxAdapter(
+              child: _CityList(
+                byCity: data.byCity,
+                total: data.totalProperties,
+              ),
+            ),
           ],
 
-          // ── Furnished Split ──────────────────────────────────────────────
-          _SectionTitle(title: 'analytics_furnished'.tr(context)),
-          _FurnishedSplit(
-            furnished: data.furnished,
-            unfurnished: data.unfurnished,
+          // ── Furnished Split ──────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _SectionLabel(title: 'analytics_furnished'.tr(context)),
+          ),
+          SliverToBoxAdapter(
+            child: _FurnishedSplit(
+              furnished: data.furnished,
+              unfurnished: data.unfurnished,
+            ),
           ),
 
-          SizedBox(height: context.r(20)),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
     );
-  }
-
-  Color _typeColor(String type) {
-    return switch (type) {
-      'apartment' => AppColors.primary,
-      'villa' => AppColors.success,
-      'studio' => AppColors.info,
-      'penthouse' => const Color(0xFF9333EA),
-      'duplex' => AppColors.warning,
-      'chalet' => const Color(0xFFEC4899),
-      _ => AppColors.textSecondary,
-    };
   }
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
 class _EmptyAnalytics extends StatelessWidget {
+  const _EmptyAnalytics();
+
   @override
   Widget build(BuildContext context) => Center(
     child: Padding(
@@ -243,18 +317,33 @@ class _EmptyAnalytics extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.bar_chart_rounded,
-            size: context.r(72),
-            color: Colors.grey.shade300,
+          Container(
+            width: context.r(96),
+            height: context.r(96),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  _C.blue.withOpacity(0.12),
+                  _C.purple.withOpacity(0.08),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.bar_chart_rounded,
+              size: context.r(48),
+              color: _C.blue.withOpacity(0.4),
+            ),
           ),
-          SizedBox(height: context.r(16)),
+          SizedBox(height: context.r(20)),
           Text(
             'analytics_empty_title'.tr(context),
             style: GoogleFonts.cairo(
               fontSize: context.sp(16),
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              color: _C.navy,
             ),
           ),
           SizedBox(height: context.r(8)),
@@ -272,163 +361,240 @@ class _EmptyAnalytics extends StatelessWidget {
   );
 }
 
-// ── Hero Banner ───────────────────────────────────────────────────────────────
+// ── Gradient Hero (AppBar + stats banner) ─────────────────────────────────────
 
-class _HeroBanner extends StatelessWidget {
+class _GradientHero extends StatelessWidget {
   final OwnerAnalyticsData data;
   final String Function(double) formatPrice;
-  const _HeroBanner({required this.data, required this.formatPrice});
+  const _GradientHero({required this.data, required this.formatPrice});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: context.rOnly(left: 16, right: 16, top: 16, bottom: 4),
-      padding: context.rSymmetric(horizontal: 20, vertical: 18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1B2D5E), Color(0xFF1565C0)],
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_C.navy, Color(0xFF1A3A7A), _C.blue],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(context.r(20)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1565C0).withOpacity(0.30),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: context.rAll(8),
+      child: SafeArea(
+        bottom: false,
+        child: Stack(
+          children: [
+            // Decorative circles
+            Positioned(
+              top: -40,
+              right: -40,
+              child: Container(
+                width: context.r(180),
+                height: context.r(180),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(context.r(10)),
-                ),
-                child: Icon(
-                  Icons.bar_chart_rounded,
-                  color: Colors.white,
-                  size: context.r(20),
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.04),
                 ),
               ),
-              SizedBox(width: context.r(10)),
-              Text(
-                'analytics_portfolio_value'.tr(context),
-                style: GoogleFonts.tajawal(
-                  fontSize: context.sp(13),
-                  color: Colors.white.withOpacity(0.80),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: context.r(12)),
-          Text(
-            '${formatPrice(data.totalPortfolioValue)} ${'currency_egp'.tr(context)}',
-            style: GoogleFonts.cairo(
-              fontSize: context.sp(28),
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
             ),
-          ),
-          SizedBox(height: context.r(4)),
-          Text(
-            '${data.totalProperties} ${'analytics_properties_total'.tr(context)}',
-            style: GoogleFonts.tajawal(
-              fontSize: context.sp(12),
-              color: Colors.white.withOpacity(0.70),
+            Positioned(
+              bottom: 20,
+              left: -30,
+              child: Container(
+                width: context.r(120),
+                height: context.r(120),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.03),
+                ),
+              ),
             ),
-          ),
-          SizedBox(height: context.r(14)),
-          Row(
-            children: [
-              _HeroChip(
-                icon: Icons.trending_up_rounded,
-                label:
-                    '${formatPrice(data.totalRentValue)} ${'analytics_rent_value'.tr(context)}',
-                color: const Color(0xFF34D399),
-              ),
-              SizedBox(width: context.r(8)),
-              _HeroChip(
-                icon: Icons.sell_rounded,
-                label:
-                    '${formatPrice(data.totalSaleValue)} ${'analytics_sale_value'.tr(context)}',
-                color: const Color(0xFFFBBF24),
-              ),
-            ],
-          ),
-        ],
+            Column(
+              children: [
+                SizedBox(height: context.r(20)),
+
+                // Portfolio value
+                Padding(
+                  padding: context.rSymmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: context.rAll(8),
+                            decoration: BoxDecoration(
+                              color: _C.glass,
+                              borderRadius: BorderRadius.circular(
+                                context.r(10),
+                              ),
+                              border: Border.all(color: _C.glassBorder),
+                            ),
+                            child: Icon(
+                              Icons.analytics_rounded,
+                              color: Colors.white,
+                              size: context.r(18),
+                            ),
+                          ),
+                          SizedBox(width: context.r(10)),
+                          Text(
+                            'analytics_portfolio_value'.tr(context),
+                            style: GoogleFonts.tajawal(
+                              fontSize: context.sp(12.5),
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: context.r(10)),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            formatPrice(data.totalPortfolioValue),
+                            style: GoogleFonts.cairo(
+                              fontSize: context.sp(34),
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              height: 1.0,
+                            ),
+                          ),
+                          SizedBox(width: context.r(6)),
+                          Padding(
+                            padding: context.rOnly(bottom: 4),
+                            child: Text(
+                              'currency_egp'.tr(context),
+                              style: GoogleFonts.tajawal(
+                                fontSize: context.sp(13),
+                                color: Colors.white60,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: context.r(4)),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          '${data.totalProperties} ${'analytics_properties_total'.tr(context)}',
+                          style: GoogleFonts.tajawal(
+                            fontSize: context.sp(12),
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: context.r(16)),
+
+                // Rent / Sale chips
+                Padding(
+                  padding: context.rSymmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      _HeroGlassChip(
+                        icon: Icons.trending_up_rounded,
+                        label:
+                            '${formatPrice(data.totalRentValue)} ${'analytics_rent_value'.tr(context)}',
+                        color: _C.success,
+                      ),
+                      SizedBox(width: context.r(8)),
+                      _HeroGlassChip(
+                        icon: Icons.sell_rounded,
+                        label:
+                            '${formatPrice(data.totalSaleValue)} ${'analytics_sale_value'.tr(context)}',
+                        color: _C.warning,
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: context.r(24)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _HeroChip extends StatelessWidget {
+class _HeroGlassChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  const _HeroChip({
+  const _HeroGlassChip({
     required this.icon,
     required this.label,
     required this.color,
   });
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: context.rSymmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.15),
-      borderRadius: BorderRadius.circular(context.r(8)),
-      border: Border.all(color: color.withOpacity(0.40)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: context.r(12), color: color),
-        SizedBox(width: context.r(4)),
-        Text(
-          label,
-          style: GoogleFonts.cairo(
-            fontSize: context.sp(10),
-            color: color,
-            fontWeight: FontWeight.w700,
-          ),
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(context.r(10)),
+    child: BackdropFilter(
+      filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+      child: Container(
+        padding: context.rSymmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.18),
+          borderRadius: BorderRadius.circular(context.r(10)),
+          border: Border.all(color: color.withOpacity(0.35)),
         ),
-      ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: context.r(13), color: color),
+            SizedBox(width: context.r(5)),
+            Text(
+              label,
+              style: GoogleFonts.cairo(
+                fontSize: context.sp(10.5),
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }
 
-// ── Section Title ─────────────────────────────────────────────────────────────
+// ── Section label ─────────────────────────────────────────────────────────────
 
-class _SectionTitle extends StatelessWidget {
+class _SectionLabel extends StatelessWidget {
   final String title;
-  const _SectionTitle({required this.title});
+  const _SectionLabel({required this.title});
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: context.rOnly(left: 20, right: 20, top: 22, bottom: 10),
+    padding: context.rOnly(left: 20, right: 20, top: 24, bottom: 10),
     child: Row(
       children: [
         Container(
           width: context.r(4),
-          height: context.r(18),
+          height: context.r(20),
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            gradient: const LinearGradient(
+              colors: [_C.blue, _C.blueLight],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
-        SizedBox(width: context.r(8)),
+        SizedBox(width: context.r(10)),
         Text(
           title,
           style: GoogleFonts.cairo(
-            fontSize: context.sp(14),
+            fontSize: context.sp(15),
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: _C.navy,
           ),
         ),
       ],
@@ -449,37 +615,37 @@ class _KpiGrid extends StatelessWidget {
         icon: Icons.apartment_rounded,
         label: 'analytics_kpi_total'.tr(context),
         value: '${data.totalProperties}',
-        color: AppColors.primary,
+        color: _C.blue,
       ),
       _KpiItem(
         icon: Icons.check_circle_outline_rounded,
         label: 'analytics_kpi_available'.tr(context),
         value: '${data.availableProperties}',
-        color: AppColors.success,
+        color: _C.success,
       ),
       _KpiItem(
         icon: Icons.lock_clock_rounded,
         label: 'analytics_kpi_rented'.tr(context),
         value: '${data.rentedProperties}',
-        color: AppColors.warning,
+        color: _C.warning,
       ),
       _KpiItem(
         icon: Icons.home_work_rounded,
         label: 'analytics_kpi_rent'.tr(context),
         value: '${data.rentProperties}',
-        color: AppColors.info,
+        color: _C.info,
       ),
       _KpiItem(
         icon: Icons.sell_rounded,
         label: 'analytics_kpi_sale'.tr(context),
         value: '${data.saleProperties}',
-        color: const Color(0xFF9333EA),
+        color: _C.purple,
       ),
       _KpiItem(
         icon: Icons.chair_rounded,
         label: 'analytics_kpi_furnished'.tr(context),
         value: '${data.furnished}',
-        color: const Color(0xFFEC4899),
+        color: _C.pink,
       ),
     ];
 
@@ -492,7 +658,7 @@ class _KpiGrid extends StatelessWidget {
           crossAxisCount: 3,
           crossAxisSpacing: context.r(10),
           mainAxisSpacing: context.r(10),
-          childAspectRatio: 1.0,
+          childAspectRatio: 0.95,
         ),
         itemCount: items.length,
         itemBuilder: (_, i) => _KpiCard(item: items[i]),
@@ -522,38 +688,54 @@ class _KpiCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(context.r(16)),
-      boxShadow: AppShadows.soft,
+      borderRadius: BorderRadius.circular(context.r(18)),
+      border: Border.all(color: item.color.withOpacity(0.12)),
+      boxShadow: [
+        BoxShadow(
+          color: item.color.withOpacity(0.08),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+      ],
     ),
     padding: context.rAll(12),
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          width: context.r(36),
-          height: context.r(36),
+          width: context.r(40),
+          height: context.r(40),
           decoration: BoxDecoration(
-            color: item.color.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(context.r(10)),
+            gradient: LinearGradient(
+              colors: [
+                item.color.withOpacity(0.15),
+                item.color.withOpacity(0.06),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(context.r(12)),
           ),
-          child: Icon(item.icon, color: item.color, size: context.r(18)),
+          child: Icon(item.icon, color: item.color, size: context.r(20)),
         ),
         SizedBox(height: context.r(8)),
         Text(
           item.value,
           style: GoogleFonts.cairo(
-            fontSize: context.sp(18),
+            fontSize: context.sp(22),
             fontWeight: FontWeight.w900,
-            color: const Color(0xFF1B2D5E),
+            color: _C.navy,
+            height: 1.0,
           ),
         ),
+        SizedBox(height: context.r(3)),
         Text(
           item.label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: GoogleFonts.tajawal(
-            fontSize: context.sp(9),
+            fontSize: context.sp(9.5),
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w600,
           ),
@@ -577,11 +759,18 @@ class _ListingTypeSplit extends StatelessWidget {
 
     return Container(
       margin: context.rSymmetric(horizontal: 16),
-      padding: context.rAll(18),
+      padding: context.rAll(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(context.r(18)),
-        boxShadow: AppShadows.soft,
+        borderRadius: BorderRadius.circular(context.r(20)),
+        border: Border.all(color: _C.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: _C.blue.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -593,7 +782,7 @@ class _ListingTypeSplit extends StatelessWidget {
                   label: 'home_filter_rent'.tr(context),
                   count: data.rentProperties,
                   pct: rentPct,
-                  color: AppColors.info,
+                  color: _C.info,
                 ),
               ),
               SizedBox(width: context.r(12)),
@@ -603,26 +792,38 @@ class _ListingTypeSplit extends StatelessWidget {
                   label: 'home_filter_sale'.tr(context),
                   count: data.saleProperties,
                   pct: salePct,
-                  color: const Color(0xFF9333EA),
+                  color: _C.purple,
                 ),
               ),
             ],
           ),
           SizedBox(height: context.r(16)),
-          // Progress bar
+          // Segmented progress bar
           ClipRRect(
-            borderRadius: BorderRadius.circular(context.r(4)),
+            borderRadius: BorderRadius.circular(context.r(8)),
             child: SizedBox(
-              height: context.r(8),
+              height: context.r(10),
               child: Row(
                 children: [
                   Flexible(
                     flex: data.rentProperties,
-                    child: Container(color: AppColors.info),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_C.info, Color(0xFF38BDF8)],
+                        ),
+                      ),
+                    ),
                   ),
                   Flexible(
                     flex: data.saleProperties,
-                    child: Container(color: const Color(0xFF9333EA)),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_C.purple, Color(0xFFA78BFA)],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -650,50 +851,58 @@ class _SplitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: context.rAll(12),
+    padding: context.rAll(14),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.06),
-      borderRadius: BorderRadius.circular(context.r(12)),
+      gradient: LinearGradient(
+        colors: [color.withOpacity(0.08), color.withOpacity(0.03)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(context.r(14)),
+      border: Border.all(color: color.withOpacity(0.15)),
     ),
     child: Row(
       children: [
         Container(
-          width: context.r(34),
-          height: context.r(34),
+          width: context.r(36),
+          height: context.r(36),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(context.r(9)),
+            color: color.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(context.r(10)),
           ),
-          child: Icon(icon, color: color, size: context.r(17)),
+          child: Icon(icon, color: color, size: context.r(18)),
         ),
-        SizedBox(width: context.r(8)),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '$count',
-              style: GoogleFonts.cairo(
-                fontSize: context.sp(18),
-                fontWeight: FontWeight.w900,
-                color: color,
+        SizedBox(width: context.r(10)),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$count',
+                style: GoogleFonts.cairo(
+                  fontSize: context.sp(20),
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                  height: 1.0,
+                ),
               ),
-            ),
-            Text(
-              label,
-              style: GoogleFonts.tajawal(
-                fontSize: context.sp(10),
-                color: AppColors.textSecondary,
+              Text(
+                label,
+                style: GoogleFonts.tajawal(
+                  fontSize: context.sp(10),
+                  color: AppColors.textSecondary,
+                ),
               ),
-            ),
-            Text(
-              '${(pct * 100).toStringAsFixed(0)}%',
-              style: GoogleFonts.cairo(
-                fontSize: context.sp(10),
-                fontWeight: FontWeight.w700,
-                color: color.withOpacity(0.70),
+              Text(
+                '${(pct * 100).toStringAsFixed(0)}%',
+                style: GoogleFonts.cairo(
+                  fontSize: context.sp(10),
+                  fontWeight: FontWeight.w700,
+                  color: color.withOpacity(0.70),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     ),
@@ -701,7 +910,7 @@ class _SplitCard extends StatelessWidget {
 }
 
 // ── Monthly Bar Chart ─────────────────────────────────────────────────────────
-// Converts a month number string ("1".."12") to a short localized month name.
+
 String _localizedMonth(BuildContext context, String monthStr) {
   final monthNum = int.tryParse(monthStr) ?? 1;
   final locale = Localizations.localeOf(context).languageCode;
@@ -721,16 +930,23 @@ class _MonthlyBarChart extends StatelessWidget {
 
     return Container(
       margin: context.rSymmetric(horizontal: 16),
-      padding: context.rAll(18),
+      padding: context.rAll(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(context.r(18)),
-        boxShadow: AppShadows.soft,
+        borderRadius: BorderRadius.circular(context.r(20)),
+        border: Border.all(color: _C.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: _C.blue.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
           SizedBox(
-            height: context.r(120),
+            height: context.r(130),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: months.asMap().entries.map((entry) {
@@ -745,27 +961,45 @@ class _MonthlyBarChart extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         if (m.count > 0)
-                          Text(
-                            '${m.count}',
-                            style: GoogleFonts.cairo(
-                              fontSize: context.sp(9),
-                              fontWeight: FontWeight.w700,
+                          Container(
+                            margin: context.rOnly(bottom: 4),
+                            padding: context.rSymmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
                               color: isMax
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
+                                  ? _C.navy
+                                  : _C.blue.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(context.r(6)),
+                            ),
+                            child: Text(
+                              '${m.count}',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.cairo(
+                                fontSize: context.sp(9),
+                                fontWeight: FontWeight.w800,
+                                color: isMax ? Colors.white : _C.blue,
+                              ),
                             ),
                           ),
-                        SizedBox(height: context.r(2)),
                         AnimatedContainer(
-                          duration: const Duration(milliseconds: 600),
+                          duration: const Duration(milliseconds: 700),
                           curve: Curves.easeOutCubic,
                           height: context.r(90) * fraction.clamp(0.05, 1.0),
                           decoration: BoxDecoration(
-                            color: isMax
-                                ? AppColors.primary
-                                : AppColors.primary.withOpacity(0.25),
+                            gradient: LinearGradient(
+                              colors: isMax
+                                  ? [_C.navy, _C.blue]
+                                  : [
+                                      _C.blue.withOpacity(0.30),
+                                      _C.blueLight.withOpacity(0.15),
+                                    ],
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                            ),
                             borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(context.r(6)),
+                              top: Radius.circular(context.r(8)),
                             ),
                           ),
                         ),
@@ -776,7 +1010,7 @@ class _MonthlyBarChart extends StatelessWidget {
               }).toList(),
             ),
           ),
-          SizedBox(height: context.r(8)),
+          SizedBox(height: context.r(10)),
           Row(
             children: months
                 .map(
@@ -787,6 +1021,7 @@ class _MonthlyBarChart extends StatelessWidget {
                       style: GoogleFonts.tajawal(
                         fontSize: context.sp(9.5),
                         color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -822,71 +1057,79 @@ class _DonutChart extends StatelessWidget {
 
     return Container(
       margin: context.rSymmetric(horizontal: 16),
-      padding: context.rAll(18),
+      padding: context.rAll(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(context.r(18)),
-        boxShadow: AppShadows.soft,
+        borderRadius: BorderRadius.circular(context.r(20)),
+        border: Border.all(color: _C.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: _C.blue.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: Column(
+      child: Row(
         children: [
           SizedBox(
+            width: context.r(140),
             height: context.r(140),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: context.r(140),
-                  height: context.r(140),
-                  child: CustomPaint(
-                    painter: _DonutPainter(slices: items, total: total),
-                  ),
-                ),
-                SizedBox(width: context.r(20)),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: items.map((s) {
-                      final pct = total == 0 ? 0 : (s.value / total * 100);
-                      return Padding(
-                        padding: context.rOnly(bottom: 8),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: context.r(10),
-                              height: context.r(10),
-                              decoration: BoxDecoration(
-                                color: s.color,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            SizedBox(width: context.r(6)),
-                            Expanded(
-                              child: Text(
-                                s.label,
-                                style: GoogleFonts.tajawal(
-                                  fontSize: context.sp(10.5),
-                                  color: AppColors.textSecondary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Text(
-                              '${pct.toStringAsFixed(0)}%',
-                              style: GoogleFonts.cairo(
-                                fontSize: context.sp(10),
-                                fontWeight: FontWeight.w700,
-                                color: s.color,
-                              ),
-                            ),
-                          ],
+            child: CustomPaint(
+              painter: _DonutPainter(slices: items, total: total),
+            ),
+          ),
+          SizedBox(width: context.r(20)),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: items.map((s) {
+                final pct = total == 0 ? 0 : (s.value / total * 100);
+                return Padding(
+                  padding: context.rOnly(bottom: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: context.r(10),
+                        height: context.r(10),
+                        decoration: BoxDecoration(
+                          color: s.color,
+                          shape: BoxShape.circle,
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      SizedBox(width: context.r(7)),
+                      Expanded(
+                        child: Text(
+                          s.label,
+                          style: GoogleFonts.tajawal(
+                            fontSize: context.sp(11),
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Container(
+                        padding: context.rSymmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: s.color.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(context.r(6)),
+                        ),
+                        child: Text(
+                          '${pct.toStringAsFixed(0)}%',
+                          style: GoogleFonts.cairo(
+                            fontSize: context.sp(10),
+                            fontWeight: FontWeight.w800,
+                            color: s.color,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -898,43 +1141,53 @@ class _DonutChart extends StatelessWidget {
 class _DonutPainter extends CustomPainter {
   final List<_PieSlice> slices;
   final double total;
-
   const _DonutPainter({required this.slices, required this.total});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-    final innerRadius = radius * 0.55;
+    final innerRadius = radius * 0.58;
     final rect = Rect.fromCircle(center: center, radius: radius);
 
-    double startAngle = -3.14159 / 2; // Start at top
+    double startAngle = -math.pi / 2;
 
     for (final slice in slices) {
       if (slice.value == 0) continue;
-      final sweepAngle = (slice.value / total) * 2 * 3.14159;
-
+      final sweepAngle = (slice.value / total) * 2 * math.pi;
       final paint = Paint()
         ..color = slice.color
         ..style = PaintingStyle.fill;
-
       canvas.drawArc(rect, startAngle, sweepAngle, true, paint);
+
+      // White gap between slices
+      final gapPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
+      canvas.drawArc(rect, startAngle, sweepAngle, true, gapPaint);
+
       startAngle += sweepAngle;
     }
 
-    // Draw inner circle (donut hole)
+    // Donut hole with subtle shadow
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.05)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawCircle(center, innerRadius + 2, shadowPaint);
+
     final holePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, innerRadius, holePaint);
 
-    // Center text: total
+    // Center total text
     final textPainter = TextPainter(
       text: TextSpan(
         text: '${total.toInt()}',
         style: const TextStyle(
-          color: Color(0xFF1B2D5E),
-          fontSize: 18,
+          color: _C.navy,
+          fontSize: 20,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -955,25 +1208,60 @@ class _DonutPainter extends CustomPainter {
 }
 
 // ── City List ─────────────────────────────────────────────────────────────────
+//
+// FIX: byCity keys are now "{gov_slug}/{city_slug}" paths (or plain slugs for
+// legacy rows).  EgyptLocationHelper.fullLocationLabel() resolves them to the
+// correct localised name, so the user sees e.g. "القاهرة / مدينة نصر" instead
+// of "nasr_city".
 
 class _CityList extends StatelessWidget {
   final Map<String, int> byCity;
   final int total;
   const _CityList({required this.byCity, required this.total});
 
+  /// Resolves a location key (slug path or legacy value) to a localised label.
+  String _resolveLabel(String key, String lang) {
+    // Key format: "{gov}/{city}"  or  "{gov}/{city}/{area}"  or  plain slug/value
+    final parts = key.split('/');
+    if (parts.length >= 2) {
+      return EgyptLocationHelper.fullLocationLabel(
+        governorateSlug: parts[0],
+        citySlug: parts[1],
+        areaSlug: parts.length >= 3 ? parts[2] : null,
+        lang: lang,
+      );
+    }
+    // Single value — try as governorate slug first, then city slug
+    final govName = EgyptLocationHelper.governorateName(key, lang: lang);
+    if (govName != key) return govName; // resolved
+    return EgyptLocationHelper.cityName(
+      governorateSlug: null,
+      citySlugOrLegacy: key,
+      lang: lang,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
     final sorted = byCity.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final top = sorted.take(5).toList();
 
     return Container(
       margin: context.rSymmetric(horizontal: 16),
-      padding: context.rAll(18),
+      padding: context.rAll(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(context.r(18)),
-        boxShadow: AppShadows.soft,
+        borderRadius: BorderRadius.circular(context.r(20)),
+        border: Border.all(color: _C.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: _C.blue.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: top.asMap().entries.map((entry) {
@@ -981,66 +1269,98 @@ class _CityList extends StatelessWidget {
           final city = entry.value;
           final pct = total == 0 ? 0.0 : city.value / total;
 
+          // ── FIX: resolve slug/path to localised name ─────────────────
+          final displayName = _resolveLabel(city.key, lang);
+
+          final rankColors = [
+            const Color(0xFFFFD700),
+            const Color(0xFFC0C0C0),
+            const Color(0xFFCD7F32),
+            _C.blue.withOpacity(0.5),
+            _C.blue.withOpacity(0.3),
+          ];
+
           return Padding(
-            padding: context.rOnly(bottom: i < top.length - 1 ? 12 : 0),
+            padding: context.rOnly(bottom: i < top.length - 1 ? 14 : 0),
             child: Column(
               children: [
                 Row(
                   children: [
+                    // Rank badge
                     Container(
-                      width: context.r(26),
-                      height: context.r(26),
+                      width: context.r(28),
+                      height: context.r(28),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.09),
-                        borderRadius: BorderRadius.circular(context.r(7)),
+                        color: rankColors[i].withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(context.r(8)),
+                        border: Border.all(
+                          color: rankColors[i].withOpacity(0.4),
+                          width: 1.5,
+                        ),
                       ),
                       child: Text(
                         '${i + 1}',
                         style: GoogleFonts.cairo(
                           fontSize: context.sp(11),
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
+                          fontWeight: FontWeight.w900,
+                          color: i < 3 ? rankColors[i] : _C.blue,
                         ),
                       ),
                     ),
                     SizedBox(width: context.r(10)),
                     Expanded(
                       child: Text(
-                        city.key,
+                        displayName,
                         style: GoogleFonts.tajawal(
+                          fontSize: context.sp(12.5),
+                          fontWeight: FontWeight.w700,
+                          color: _C.navy,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: context.rSymmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _C.blue.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(context.r(8)),
+                      ),
+                      child: Text(
+                        '${city.value}',
+                        style: GoogleFonts.cairo(
                           fontSize: context.sp(12),
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                          color: _C.blue,
                         ),
                       ),
                     ),
-                    Text(
-                      '${city.value}',
-                      style: GoogleFonts.cairo(
-                        fontSize: context.sp(13),
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                      ),
-                    ),
                     SizedBox(width: context.r(6)),
-                    Text(
-                      '${(pct * 100).toStringAsFixed(0)}%',
-                      style: GoogleFonts.tajawal(
-                        fontSize: context.sp(10),
-                        color: AppColors.textSecondary,
+                    SizedBox(
+                      width: context.r(36),
+                      child: Text(
+                        '${(pct * 100).toStringAsFixed(0)}%',
+                        textAlign: TextAlign.end,
+                        style: GoogleFonts.cairo(
+                          fontSize: context.sp(10),
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: context.r(6)),
+                SizedBox(height: context.r(7)),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(context.r(4)),
+                  borderRadius: BorderRadius.circular(context.r(6)),
                   child: LinearProgressIndicator(
                     value: pct,
-                    minHeight: context.r(5),
-                    backgroundColor: AppColors.primary.withOpacity(0.08),
-                    valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                    minHeight: context.r(6),
+                    backgroundColor: _C.blue.withOpacity(0.07),
+                    valueColor: AlwaysStoppedAnimation(
+                      i == 0 ? _C.navy : _C.blue,
+                    ),
                   ),
                 ),
               ],
@@ -1066,60 +1386,75 @@ class _FurnishedSplit extends StatelessWidget {
 
     return Container(
       margin: context.rSymmetric(horizontal: 16),
-      padding: context.rAll(18),
+      padding: context.rAll(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(context.r(18)),
-        boxShadow: AppShadows.soft,
+        borderRadius: BorderRadius.circular(context.r(20)),
+        border: Border.all(color: _C.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: _C.blue.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Row(
             children: [
               Expanded(
-                child: _FurnishedChip(
+                child: _FurnishedCard(
                   label: 'analytics_furnished_yes'.tr(context),
                   count: furnished,
-                  color: AppColors.success,
+                  color: _C.success,
                   icon: Icons.chair_rounded,
                 ),
               ),
               SizedBox(width: context.r(10)),
               Expanded(
-                child: _FurnishedChip(
+                child: _FurnishedCard(
                   label: 'analytics_furnished_no'.tr(context),
                   count: unfurnished,
-                  color: AppColors.textSecondary,
+                  color: const Color(0xFF94A3B8),
                   icon: Icons.chair_alt_rounded,
                 ),
               ),
             ],
           ),
-          SizedBox(height: context.r(14)),
+          SizedBox(height: context.r(16)),
+          // Segmented progress
           ClipRRect(
-            borderRadius: BorderRadius.circular(context.r(4)),
+            borderRadius: BorderRadius.circular(context.r(8)),
             child: SizedBox(
-              height: context.r(8),
+              height: context.r(10),
               child: Row(
                 children: [
                   Flexible(
                     flex: furnished,
-                    child: Container(color: AppColors.success),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_C.success, Color(0xFF34D399)],
+                        ),
+                      ),
+                    ),
                   ),
                   Flexible(
                     flex: unfurnished,
-                    child: Container(color: Colors.grey.shade200),
+                    child: Container(color: const Color(0xFFE2E8F0)),
                   ),
                 ],
               ),
             ),
           ),
-          SizedBox(height: context.r(8)),
+          SizedBox(height: context.r(10)),
           Text(
             '${(furnPct * 100).toStringAsFixed(0)}% ${'analytics_furnished_pct'.tr(context)}',
             style: GoogleFonts.tajawal(
-              fontSize: context.sp(11),
+              fontSize: context.sp(11.5),
               color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -1128,12 +1463,12 @@ class _FurnishedSplit extends StatelessWidget {
   }
 }
 
-class _FurnishedChip extends StatelessWidget {
+class _FurnishedCard extends StatelessWidget {
   final String label;
   final int count;
   final Color color;
   final IconData icon;
-  const _FurnishedChip({
+  const _FurnishedCard({
     required this.label,
     required this.count,
     required this.color,
@@ -1142,24 +1477,30 @@ class _FurnishedChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: context.rAll(12),
+    padding: context.rAll(14),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.07),
-      borderRadius: BorderRadius.circular(context.r(12)),
+      gradient: LinearGradient(
+        colors: [color.withOpacity(0.09), color.withOpacity(0.03)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(context.r(14)),
+      border: Border.all(color: color.withOpacity(0.15)),
     ),
     child: Row(
       children: [
-        Icon(icon, color: color, size: context.r(20)),
-        SizedBox(width: context.r(8)),
+        Icon(icon, color: color, size: context.r(22)),
+        SizedBox(width: context.r(10)),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               '$count',
               style: GoogleFonts.cairo(
-                fontSize: context.sp(18),
+                fontSize: context.sp(22),
                 fontWeight: FontWeight.w900,
                 color: color,
+                height: 1.0,
               ),
             ),
             Text(

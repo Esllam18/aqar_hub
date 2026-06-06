@@ -4,17 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../data/models/property_model.dart';
 import '../../../helpers/property_helpers.dart';
+import 'package:aqar_hub/core/location/helper/location_display_helper.dart';
 
 class DetailsInfoRow extends StatelessWidget {
   final PropertyModel property;
   const DetailsInfoRow({super.key, required this.property});
 
-  String _locationLabel() {
-    final parts = <String>[
-      if (property.address.trim().isNotEmpty) property.address.trim(),
-      property.city.trim(),
-    ];
-    return parts.join(', ');
+  String _locationLabel(BuildContext context) {
+    return LocationDisplayHelper.fullLabel(
+      context: context,
+      address: property.address,
+      governorateSlug: property.governorateSlug,
+      citySlug: property.citySlug,
+      areaSlug: property.areaSlug,
+    );
   }
 
   @override
@@ -25,7 +28,7 @@ class DetailsInfoRow extends StatelessWidget {
       children: [
         _InfoChip(
           icon: Icons.location_on_outlined,
-          label: _locationLabel(),
+          label: _locationLabel(context),
           color: const Color(0xFFE53935),
         ),
         _InfoChip(

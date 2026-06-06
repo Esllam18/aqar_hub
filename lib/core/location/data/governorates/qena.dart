@@ -7,8 +7,8 @@ const EgyptLocationNode qenaGovernorate = EgyptLocationNode(
   arName: 'قنا',
   aliases: ['qena', 'قنا'],
   children: [
-    EgyptLocationNode(slug: 'qena-city', enName: 'Qena City', arName: 'مدينة قنا', aliases: ['qena city', 'مدينة قنا']),
-    EgyptLocationNode(slug: 'nag-hammadi', enName: 'Nag Hammadi', arName: 'نجع حمادي', aliases: ['nag hammadi', 'نجع حمادي']),
+    EgyptLocationNode(slug: 'qena_city', enName: 'Qena City', arName: 'مدينة قنا', aliases: ['qena city', 'مدينة قنا', 'qena-city']),
+    EgyptLocationNode(slug: 'nag_hammadi', enName: 'Nag Hammadi', arName: 'نجع حمادي', aliases: ['nag hammadi', 'نجع حمادي', 'nag-hammadi']),
     EgyptLocationNode(slug: 'dishna', enName: 'Dishna', arName: 'دشنا', aliases: ['dishna', 'دشنا']),
     EgyptLocationNode(slug: 'qus', enName: 'Qus', arName: 'قوص', aliases: ['qus', 'قوص']),
     EgyptLocationNode(slug: 'farshout', enName: 'Farshout', arName: 'فرشوط', aliases: ['farshout', 'فرشوط']),
